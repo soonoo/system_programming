@@ -3,6 +3,7 @@
 ### C ###
 # Prerequisites
 *.d
+proxy_cache
 
 # Object files
 *.o
