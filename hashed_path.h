@@ -16,11 +16,13 @@
 #ifndef __HASHED_PATH_H__
 #define __HASHED_PATH_H__
 
+#define MAX_URL_LENGTH      2048
 #define DIR_NAME_LENGTH     3
 #define FILE_NAME_LENGTH    37
 #define HASH_PATH_LENGTH    41
 
 typedef struct {
+    char url[MAX_URL_LENGTH];
     char dir_name[DIR_NAME_LENGTH + 1];
     char file_name[FILE_NAME_LENGTH + 1];
     char full_path[HASH_PATH_LENGTH + 1];

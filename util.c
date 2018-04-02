@@ -95,17 +95,23 @@ bool is_hit(hashed_path *path)
 
     while((dir_cache = readdir(dp_cache))) {
         if (strcmp(dir_cache->d_name, path->dir_name) == EQUAL) {
+            chdir(CACHE_DIR_NAME);
             DIR *dp_hash = opendir(path->dir_name);
             struct dirent *dir_hash;
 
             while((dir_hash = readdir(dp_hash))) {
-                if(strcmp(dir_hash->d_name, path->file_name) == EQUAL) return true;
+                if(strcmp(dir_hash->d_name, path->file_name) == EQUAL) {
+                    closedir(dp_hash);
+                    chdir("..");
+                    return true;
+                }
             }
             closedir(dp_hash);
-        } 
-        else continue;
+            chdir("..");
+        }
     }
     closedir(dp_cache);
 
     return false;
 }
+

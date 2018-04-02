@@ -1,7 +1,7 @@
 OBJS = proxy_cache.o util.o
 CC = gcc
 TARGET = proxy_cache
-FLAGS = -Wall -g -o
+FLAGS = -Wall -o
 
 all: $(TARGET)
 

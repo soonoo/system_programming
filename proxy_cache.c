@@ -25,6 +25,7 @@ int main(void)
     time_t current_time;
     DIR *dp;
     struct dirent *dir;
+    int fd_logfile;
 
     // set file mode mask
     umask(0000);
@@ -34,10 +35,11 @@ int main(void)
     chdir(home_dir);
 
     // create "logfile" directory
-    if((dp = opendir(LOGFILE_DIR_NAME)) == NULL) mkdir(LOGFILE_DIR_NAME, MODE_644);
+    if((dp = opendir(LOGFILE_DIR_NAME)) == NULL) mkdir(LOGFILE_DIR_NAME, MODE_744);
     if(dp) closedir(dp);
     chdir(LOGFILE_DIR_NAME);
-    open(LOGFILE_NAME, O_CREAT, MODE_644);
+
+    fd_logfile = open(LOGFILE_NAME, O_RDWR | O_CREAT | O_APPEND, MODE_644);
     chdir("..");
 
     // create "cache" directory and change working directory
@@ -52,34 +54,30 @@ int main(void)
 
         // quit if BYE COMMAND is entered
         if(strcmp(BYE_COMMAND, buf) == 0) break;
-
         // hash url
         sha1_hash(buf, hashed_url);
 
         // get directory namd and file name
         get_hash_path(hashed_url, &path);
 
-        dp = opendir(CACHE_DIR_NAME);
-        while((dir = readdir(dp))) {
-            if(dir->d_ino != 0) printf("%s\n", dir->d_name);
+        if(is_hit(&path)) {
+            write(fd_logfile, HIT_LOG_MESSAGE, strlen(HIT_LOG_MESSAGE));
+        } else {
+            write(fd_logfile, MISS_LOG_MESSAGE, strlen(MISS_LOG_MESSAGE));
+            chdir(CACHE_DIR_NAME);
+            // make directory if not exists
+            if((dp = opendir(path.dir_name)) == NULL) mkdir(path.dir_name, MODE_777);
+            if(dp) closedir(dp);
+
+            // make file if not exists
+            open(path.full_path, O_CREAT, MODE_644);
+
+            // write logfile
+            chdir("..");
         }
-        if(dp) closedir(dp);
-
-        printf("%d\n", is_hit(&path));
-
-        chdir(CACHE_DIR_NAME);
-        // make directory if not exists
-        if((dp = opendir(path.dir_name)) == NULL) mkdir(path.dir_name, MODE_777);
-        if(dp) closedir(dp);
-
-        // make file if not exists
-        open(path.full_path, O_CREAT, MODE_644);
-
-        // write logfile
-        chdir("..");
     }
 
-    free(buf);
+     free(buf);
     return 0;
 }
 
