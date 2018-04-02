@@ -31,15 +31,20 @@
 #define HASH_LENGTH         40
 #define MAX_PATH_LENGTH     4096
 #define MODE_777            0777
-#define MODE_644           0644
+#define MODE_644            0644
 #define BYE_COMMAND         "bye"
 #define CACHE_DIR_NAME      "cache"
 #define LOGFILE_DIR_NAME    "logfile"
+#define LOGFILE_NAME        "logfile.txt"
+#define EQUAL               0
+
+typedef enum { false, true } bool;
 
 char *sha1_hash(char *input_url, char *hashed_url);
 char *getHomeDir(char *home);
 void remove_newline(char *string, size_t *size);
 size_t get_input(char **buf, size_t *len);
 hashed_path *get_hash_path(char *hashed_url, hashed_path *path);
+bool is_hit(hashed_path *path);
 
 #endif /* __HEADERS_H__ */

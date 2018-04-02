@@ -76,3 +76,36 @@ hashed_path *get_hash_path(char *hashed_url, hashed_path *path)
 
     return path;
 }
+
+
+/*
+*
+*   is_hit
+*   Input           hashed_path*    hashed url string
+*
+*   Output          bool            true if url is hit
+*
+*   Description     return true if url is hit
+*
+*/
+bool is_hit(hashed_path *path)
+{
+    DIR *dp_cache = opendir(CACHE_DIR_NAME);
+    struct dirent *dir_cache;
+
+    while((dir_cache = readdir(dp_cache))) {
+        if (strcmp(dir_cache->d_name, path->dir_name) == EQUAL) {
+            DIR *dp_hash = opendir(path->dir_name);
+            struct dirent *dir_hash;
+
+            while((dir_hash = readdir(dp_hash))) {
+                if(strcmp(dir_hash->d_name, path->file_name) == EQUAL) return true;
+            }
+            closedir(dp_hash);
+        } 
+        else continue;
+    }
+    closedir(dp_cache);
+
+    return false;
+}

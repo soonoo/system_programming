@@ -23,8 +23,8 @@ int main(void)
     char home_dir[MAX_PATH_LENGTH];
     hashed_path path = { 0 };
     time_t current_time;
-
     DIR *dp;
+    struct dirent *dir;
 
     // set file mode mask
     umask(0000);
@@ -32,17 +32,18 @@ int main(void)
     // get home directory and change working directory to home directory
     getHomeDir(home_dir);
     chdir(home_dir);
-    printf("%s\n", home_dir);
 
     // create "logfile" directory
     if((dp = opendir(LOGFILE_DIR_NAME)) == NULL) mkdir(LOGFILE_DIR_NAME, MODE_644);
     if(dp) closedir(dp);
+    chdir(LOGFILE_DIR_NAME);
+    open(LOGFILE_NAME, O_CREAT, MODE_644);
+    chdir("..");
 
     // create "cache" directory and change working directory
     if((dp = opendir(CACHE_DIR_NAME)) == NULL) mkdir(CACHE_DIR_NAME, MODE_777);
     if(dp) closedir(dp);
-    chdir(CACHE_DIR_NAME);
-    
+
     while(1) {
         // get user input
         size = get_input(&buf, &len);
@@ -58,6 +59,15 @@ int main(void)
         // get directory namd and file name
         get_hash_path(hashed_url, &path);
 
+        dp = opendir(CACHE_DIR_NAME);
+        while((dir = readdir(dp))) {
+            if(dir->d_ino != 0) printf("%s\n", dir->d_name);
+        }
+        if(dp) closedir(dp);
+
+        printf("%d\n", is_hit(&path));
+
+        chdir(CACHE_DIR_NAME);
         // make directory if not exists
         if((dp = opendir(path.dir_name)) == NULL) mkdir(path.dir_name, MODE_777);
         if(dp) closedir(dp);
@@ -66,7 +76,7 @@ int main(void)
         open(path.full_path, O_CREAT, MODE_644);
 
         // write logfile
-        
+        chdir("..");
     }
 
     free(buf);
