@@ -114,4 +114,3 @@ bool is_hit(hashed_path *path)
 
     return false;
 }
-

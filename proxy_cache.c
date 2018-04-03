@@ -29,6 +29,7 @@ int main(void)
     time_t current_time;
     time_t start_time;
     time(&start_time);
+    int hit_count, miss_count = 0;
 
     // set file mode mask
     umask(0000);
@@ -38,11 +39,11 @@ int main(void)
     chdir(home_dir);
 
     // create "logfile" directory
-    if((dp = opendir(LOGFILE_DIR_NAME)) == NULL) mkdir(LOGFILE_DIR_NAME, MODE_755);
+    if((dp = opendir(LOGFILE_DIR_NAME)) == NULL) mkdir(LOGFILE_DIR_NAME, MODE_777);
     if(dp) closedir(dp);
     chdir(LOGFILE_DIR_NAME);
 
-    fd_logfile = open(LOGFILE_NAME, O_RDWR | O_CREAT | O_APPEND, MODE_644);
+    fd_logfile = open(LOGFILE_NAME, O_RDWR | O_CREAT | O_APPEND, MODE_777);
     chdir("..");
 
     // create "cache" directory and change working directory
@@ -68,13 +69,18 @@ int main(void)
         strcpy(path.url, buf);
 
         if(is_hit(&path)) {
+            hit_count++;
             dprintf(fd_logfile, "%s %s/%s-[%d/%02d/%02d, %02d:%02d:%02d]\n",
                 HIT_LOG_MESSAGE, path.dir_name, path.file_name,
                 1900 + local_time->tm_year, local_time->tm_mon, local_time->tm_mday,
                 local_time->tm_hour, local_time->tm_min, local_time->tm_sec);
             dprintf(fd_logfile, "%s %s\n", HIT_LOG_MESSAGE, path.url);
         } else {
-            dprintf(fd_logfile, "%s %s\n", MISS_LOG_MESSAGE, path.url);
+            miss_count++;
+            dprintf(fd_logfile, "%s %s-[%d/%02d/%02d, %02d:%02d:%02d]\n",
+                MISS_LOG_MESSAGE, path.url,
+                1900 + local_time->tm_year, local_time->tm_mon, local_time->tm_mday,
+                local_time->tm_hour, local_time->tm_min, local_time->tm_sec);
             chdir(CACHE_DIR_NAME);
 
             // make directory if not exists
@@ -88,7 +94,8 @@ int main(void)
             chdir("..");
         }
     }
-
+    dprintf(fd_logfile, "%s run time: %d sec. #request hit: %d, miss: %d\n",
+        TERM_LOG_MESSAGE, (int)(time(NULL) - start_time), hit_count, miss_count);
     free(buf);
     return 0;
 }

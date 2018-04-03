@@ -35,7 +35,6 @@
 
 #define MODE_777            0777
 #define MODE_644            0644
-#define MODE_755            0755
 
 #define BYE_COMMAND         "bye"
 #define CACHE_DIR_NAME      "cache"
