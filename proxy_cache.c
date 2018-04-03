@@ -17,83 +17,49 @@
 int main(void)
 {
     char *buf = NULL;
-    size_t size, len;
 
     char hashed_url[HASH_PATH_LENGTH + 1];
     char home_dir[MAX_PATH_LENGTH];
     hashed_path path = { 0 };
     struct tm *local_time = NULL;
-    DIR *dp;
-    struct dirent *dir;
     int fd_logfile;
     time_t current_time;
     time_t start_time;
     time(&start_time);
     int hit_count, miss_count = 0;
+    int user_input;
 
-    // set file mode mask
-    umask(0000);
-
-    // get home directory and change working directory to home directory
-    getHomeDir(home_dir);
-    chdir(home_dir);
-
-    // create "logfile" directory
-    if((dp = opendir(LOGFILE_DIR_NAME)) == NULL) mkdir(LOGFILE_DIR_NAME, MODE_777);
-    if(dp) closedir(dp);
-    chdir(LOGFILE_DIR_NAME);
-
-    fd_logfile = open(LOGFILE_NAME, O_RDWR | O_CREAT | O_APPEND, MODE_777);
-    chdir("..");
-
-    // create "cache" directory and change working directory
-    if((dp = opendir(CACHE_DIR_NAME)) == NULL) mkdir(CACHE_DIR_NAME, MODE_777);
-    if(dp) closedir(dp);
+    // file descriptor of logfile.txt
+    fd_logfile = init(home_dir);
 
     while(1) {
-        // get user input
-        size = get_input(&buf, &len);
-        time(&current_time);
+        // quit if bye command entered, continue loop if input is too short
+        user_input = check_user_input(&buf, &current_time, &local_time, hashed_url, &path);
+        if(user_input == too_short) continue;
+        if(user_input == bye) break;
 
-        local_time = localtime(&current_time);
-        remove_newline(buf, &size);
-        if (size < 1) continue;
-
-        // quit if BYE COMMAND is entered
-        if(strcmp(BYE_COMMAND, buf) == 0) break;
-        // hash url
-        sha1_hash(buf, hashed_url);
-
-        // get directory namd and file name
-        get_hash_path(hashed_url, &path);
-        strcpy(path.url, buf);
-
+        // if hit, print log
         if(is_hit(&path)) {
             hit_count++;
-            dprintf(fd_logfile, "%s %s/%s-[%d/%02d/%02d, %02d:%02d:%02d]\n",
-                HIT_LOG_MESSAGE, path.dir_name, path.file_name,
-                1900 + local_time->tm_year, local_time->tm_mon, local_time->tm_mday,
-                local_time->tm_hour, local_time->tm_min, local_time->tm_sec);
-            dprintf(fd_logfile, "%s %s\n", HIT_LOG_MESSAGE, path.url);
-        } else {
+            log_user_input(fd_logfile, hit, local_time, &path);
+        }
+
+        // if miss, print log and make file with hashed url
+        else { 
             miss_count++;
-            dprintf(fd_logfile, "%s %s-[%d/%02d/%02d, %02d:%02d:%02d]\n",
-                MISS_LOG_MESSAGE, path.url,
-                1900 + local_time->tm_year, local_time->tm_mon, local_time->tm_mday,
-                local_time->tm_hour, local_time->tm_min, local_time->tm_sec);
+            log_user_input(fd_logfile, miss, local_time, &path);
             chdir(CACHE_DIR_NAME);
 
             // make directory if not exists
-            if((dp = opendir(path.dir_name)) == NULL) mkdir(path.dir_name, MODE_777);
-            if(dp) closedir(dp);
+            create_dir(path.dir_name);
 
             // make file if not exists
             open(path.full_path, O_CREAT, MODE_644);
-
-            // write logfile
             chdir("..");
         }
     }
+
+    // print log when terminating program
     dprintf(fd_logfile, "%s run time: %d sec. #request hit: %d, miss: %d\n",
         TERM_LOG_MESSAGE, (int)(time(NULL) - start_time), hit_count, miss_count);
     free(buf);
@@ -103,49 +69,90 @@ int main(void)
 
 /*
 *
-*   sha_hash
-*   Input           char *      input url string to be hashed
-*                   char *      hashed url string 
+*   init
+*   Input           char *      pointer to home directory name
 *   
-*   Output          char *      hashed url string
+*   Output          int         file descriptor of logfile.txt
 *
-*   Description     Hashes and returns url string to sha1 checksum
+*   Description     initialize things.
+*                    1) set umask
+*                    2) get home directory
+*                    3) create cache/logfile directory
+*                    4) make logfile.txt
 *
 */
-
-char *sha1_hash(char *input_url, char *hashed_url)
+int init(char* home_dir)
 {
-    unsigned char hashed_160bits[SHA_DIGEST_LENGTH];
-    char hashed_hex[HASH_LENGTH + 1];
+    int fd;
 
-    SHA1((unsigned char *)input_url, strlen(input_url), hashed_160bits);
+    // set file mode mask
+    umask(0000);
 
-    // cast to hex string
-    for (int i = 0; i < sizeof(hashed_160bits); i++) {
-        sprintf(hashed_hex + i*2, "%02x", hashed_160bits[i]);
-    }
+    // get home directory and change working directory to home directory
+    getHomeDir(home_dir);
+    chdir(home_dir);
 
-    strcpy(hashed_url, hashed_hex);
+    // create "logfile" directory
+    create_dir(LOGFILE_DIR_NAME);
+    chdir(LOGFILE_DIR_NAME);
 
-    return hashed_url;
+    fd = open(LOGFILE_NAME, O_RDWR | O_CREAT | O_APPEND, MODE_777);
+    chdir("..");
+
+    // create "cache" directory and change working directory
+    create_dir(CACHE_DIR_NAME);
+
+    return fd;
 }
-
 
 /*
 *
-*   getHomeDir
-*   Input           char *      pointer to home directory
-*   
-*   Output          char *      pointer to home directory to be returned
+*   check_user_input
+*   Input               char **             pointer to user input
+*                       time_t *            pointer to current time
+*                       tm **               double pointer to local time
+*                       char *              hashed url
+*                       hashed_path *       pointer to struct with have dir/file name
 *
-*   Description     Get and returns home directory
+*   Output              enum input_type     0 when command equals "bye"
+*                                           1 when command is too short
+*                                           2 when command is valid
+*
+*   Description         get user input and check if bye command is entered
+*                        1) set umask
+*                        2) get home directory
+*                        3) create cache/logfile directory
+*                        4) make logfile.txt
 *
 */
-
-char *getHomeDir(char *home)
+input_type check_user_input(
+    char **buf,
+    time_t *current_time,
+    struct tm **local_time,
+    char *hashed_url,
+    hashed_path* path)
 {
-    struct passwd *usr_info = getpwuid(getuid());
-    strcpy(home, usr_info->pw_dir);
+    size_t size, len;
 
-    return home;
+    // get user input
+    size = get_input(buf, &len);
+    remove_newline(*buf, &size);
+
+    // quit if input is too short
+    if (size < 1) return too_short;
+
+    // get current local time 
+    time(current_time);
+    *local_time = localtime(current_time);
+
+    // quit if BYE COMMAND is entered
+    if(strcmp(BYE_COMMAND, *buf) == EQUAL) return bye;
+
+    // hash url
+    sha1_hash(*buf, hashed_url);
+
+    // get directory name and file name from checksum
+    get_hash_path(hashed_url, path);
+    strcpy(path->url, *buf);
+    return ok;
 }
