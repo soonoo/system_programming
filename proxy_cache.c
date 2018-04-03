@@ -61,10 +61,11 @@ int main(void)
         get_hash_path(hashed_url, &path);
 
         if(is_hit(&path)) {
-            write(fd_logfile, HIT_LOG_MESSAGE, strlen(HIT_LOG_MESSAGE));
+            dprintf(fd_logfile, "%s %s\n", HIT_LOG_MESSAGE, path.url);
         } else {
-            write(fd_logfile, MISS_LOG_MESSAGE, strlen(MISS_LOG_MESSAGE));
+            dprintf(fd_logfile, "%s %s\n", MISS_LOG_MESSAGE, path.url);
             chdir(CACHE_DIR_NAME);
+
             // make directory if not exists
             if((dp = opendir(path.dir_name)) == NULL) mkdir(path.dir_name, MODE_777);
             if(dp) closedir(dp);
