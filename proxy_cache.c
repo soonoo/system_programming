@@ -22,10 +22,13 @@ int main(void)
     char hashed_url[HASH_PATH_LENGTH + 1];
     char home_dir[MAX_PATH_LENGTH];
     hashed_path path = { 0 };
-    time_t current_time;
+    struct tm *local_time = NULL;
     DIR *dp;
     struct dirent *dir;
     int fd_logfile;
+    time_t current_time;
+    time_t start_time;
+    time(&start_time);
 
     // set file mode mask
     umask(0000);
@@ -35,7 +38,7 @@ int main(void)
     chdir(home_dir);
 
     // create "logfile" directory
-    if((dp = opendir(LOGFILE_DIR_NAME)) == NULL) mkdir(LOGFILE_DIR_NAME, MODE_744);
+    if((dp = opendir(LOGFILE_DIR_NAME)) == NULL) mkdir(LOGFILE_DIR_NAME, MODE_755);
     if(dp) closedir(dp);
     chdir(LOGFILE_DIR_NAME);
 
@@ -49,6 +52,9 @@ int main(void)
     while(1) {
         // get user input
         size = get_input(&buf, &len);
+        time(&current_time);
+
+        local_time = localtime(&current_time);
         remove_newline(buf, &size);
         if (size < 1) continue;
 
@@ -59,8 +65,13 @@ int main(void)
 
         // get directory namd and file name
         get_hash_path(hashed_url, &path);
+        strcpy(path.url, buf);
 
         if(is_hit(&path)) {
+            dprintf(fd_logfile, "%s %s/%s-[%d/%02d/%02d, %02d:%02d:%02d]\n",
+                HIT_LOG_MESSAGE, path.dir_name, path.file_name,
+                1900 + local_time->tm_year, local_time->tm_mon, local_time->tm_mday,
+                local_time->tm_hour, local_time->tm_min, local_time->tm_sec);
             dprintf(fd_logfile, "%s %s\n", HIT_LOG_MESSAGE, path.url);
         } else {
             dprintf(fd_logfile, "%s %s\n", MISS_LOG_MESSAGE, path.url);
@@ -78,7 +89,7 @@ int main(void)
         }
     }
 
-     free(buf);
+    free(buf);
     return 0;
 }
 

@@ -31,10 +31,11 @@
 
 #define HASH_LENGTH         40
 #define MAX_PATH_LENGTH     4096
+#define EQUAL               0
+
 #define MODE_777            0777
 #define MODE_644            0644
-#define MODE_744            0744
-#define EQUAL               0
+#define MODE_755            0755
 
 #define BYE_COMMAND         "bye"
 #define CACHE_DIR_NAME      "cache"
@@ -42,6 +43,7 @@
 #define LOGFILE_NAME        "logfile.txt"
 #define HIT_LOG_MESSAGE     "[Hit]"
 #define MISS_LOG_MESSAGE    "[Miss]"
+#define TERM_LOG_MESSAGE    "[Terminated]"
 
 typedef enum { false, true } bool;
 
