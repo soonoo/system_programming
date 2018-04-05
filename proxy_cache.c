@@ -26,9 +26,8 @@ int main(void)
     time_t current_time;
     time_t start_time;
     time(&start_time);
-    int hit_count, miss_count = 0;
+    int hit_count = 0, miss_count = 0;
     int user_input;
-
     // file descriptor of logfile.txt
     fd_logfile = init(home_dir);
 
