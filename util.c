@@ -6,7 +6,7 @@
 *   Author          Hong Soonwoo
 *   Student ID      2014722023
 *   
-*   Title           2018-1 System programming #1-1
+*   Title           2018-1 System programming #1-3
 *   Description     Utility functions for string manipulation, getting user input
 *
 */
@@ -92,9 +92,9 @@ void remove_newline(char *string, size_t *size)
 *   Description     get user input using getline()
 *
 */
-size_t get_input(char **buf, size_t *len)
+size_t get_input(char **buf, size_t *len, pid_t pid)
 {
-    printf("input URL > ");
+    printf("[%d]input URL > ", pid);
     return getline(buf, len, stdin);
 }
 

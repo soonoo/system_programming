@@ -20,6 +20,7 @@
 #include <openssl/sha.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <dirent.h>
 #include <pwd.h>
@@ -37,6 +38,8 @@
 #define MODE_644            0644
 
 #define BYE_COMMAND         "bye"
+#define CONNECT_COMMAND     "connect"
+#define QUIT_COMMAND        "quit"
 #define CACHE_DIR_NAME      "cache"
 #define LOGFILE_DIR_NAME    "logfile"
 #define LOGFILE_NAME        "logfile.txt"
@@ -44,7 +47,7 @@
 #define MISS_LOG_MESSAGE    "[Miss]"
 #define TERM_LOG_MESSAGE    "[Terminated]"
 
-typedef enum { bye, too_short, ok } input_type;
+typedef enum { bye, too_short, ok, connect, quit } input_type;
 typedef enum { hit, miss } log_type;
 typedef enum { false, true } bool;
 
@@ -55,7 +58,7 @@ int init(char* home_dir);
 char *sha1_hash(char *input_url, char *hashed_url);
 char *getHomeDir(char *home);
 void remove_newline(char *string, size_t *size);
-size_t get_input(char **buf, size_t *len);
+size_t get_input(char **buf, size_t *len, pid_t pid);
 hashed_path *get_hash_path(char *hashed_url, hashed_path *path);
 bool is_hit(hashed_path *path);
 void log_user_input(int fd, log_type type, struct tm* local_time, hashed_path* path);
@@ -65,7 +68,8 @@ input_type check_user_input(
     time_t *current_time,
     struct tm **local_time,
     char *hashed_url,
-    hashed_path* path
+    hashed_path* path,
+    pid_t pid
 );
 
 #endif /* __HEADERS_H__ */

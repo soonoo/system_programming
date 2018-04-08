@@ -1,12 +1,12 @@
 /*
 *
-*   File Name       main.c
+*   File Name       proxy_cache.c
 *   Date            2018/03/27
 *   OS              Ubuntu 16.04 64 bits
 *   Author          Hong Soonwoo
 *   Student ID      2014722023
 *   
-*   Title           2018-1 System programming #1-1
+*   Title           2018-1 System programming #1-3
 *   Description     Gets an input URL from stdin.
 *                   If the URL was first entered, create the directory with hash value
 *
@@ -30,31 +30,49 @@ int main(void)
     int user_input;
     // file descriptor of logfile.txt
     fd_logfile = init(home_dir);
+    pid_t pid = getpid();
 
     while(1) {
         // quit if bye command entered, continue loop if input is too short
-        user_input = check_user_input(&buf, &current_time, &local_time, hashed_url, &path);
-        if(user_input == too_short) continue;
-        if(user_input == bye) break;
+        printf("CMD\n");
+        user_input = check_user_input(&buf, &current_time, &local_time, hashed_url, &path, pid);
+        if(user_input == quit) break;
+        else if(user_input == connect) pid = fork();
+        else continue;
 
-        // if hit, print log
-        if(is_hit(&path)) {
-            hit_count++;
-            log_user_input(fd_logfile, hit, local_time, &path);
+        if(pid != 0) {
+            wait(NULL);
+            pid = getpid();
+            continue;
         }
+        else {
+            pid = getpid();
+            while(1) {        
+                printf("URL\n");
+                user_input = check_user_input(&buf, &current_time, &local_time, hashed_url, &path, pid);
+                if(user_input == bye) exit(0);
+                if(user_input == too_short) continue;
 
-        // if miss, print log and make file with hashed url
-        else { 
-            miss_count++;
-            log_user_input(fd_logfile, miss, local_time, &path);
-            chdir(CACHE_DIR_NAME);
+                // if hit, print log
+                if(is_hit(&path)) {
+                    hit_count++;
+                    log_user_input(fd_logfile, hit, local_time, &path);
+                }
 
-            // make directory if not exists
-            create_dir(path.dir_name);
+                // if miss, print log and make file with hashed url
+                else { 
+                    miss_count++;
+                    log_user_input(fd_logfile, miss, local_time, &path);
+                    chdir(CACHE_DIR_NAME);
 
-            // make file if not exists
-            open(path.full_path, O_CREAT, MODE_644);
-            chdir("..");
+                    // make directory if not exists
+                    create_dir(path.dir_name);
+
+                    // make file if not exists
+                    open(path.full_path, O_CREAT, MODE_644);
+                    chdir("..");
+                }
+            }
         }
     }
 
@@ -129,12 +147,13 @@ input_type check_user_input(
     time_t *current_time,
     struct tm **local_time,
     char *hashed_url,
-    hashed_path* path)
+    hashed_path* path,
+    pid_t pid)
 {
     size_t size, len;
 
     // get user input
-    size = get_input(buf, &len);
+    size = get_input(buf, &len, pid);
     remove_newline(*buf, &size);
 
     // quit if input is too short
@@ -144,8 +163,10 @@ input_type check_user_input(
     time(current_time);
     *local_time = localtime(current_time);
 
-    // quit if BYE COMMAND is entered
+    // return command type
     if(strcmp(BYE_COMMAND, *buf) == EQUAL) return bye;
+    if(strcmp(CONNECT_COMMAND, *buf) == EQUAL) return connect;
+    if(strcmp(QUIT_COMMAND, *buf) == EQUAL) return quit;
 
     // hash url
     sha1_hash(*buf, hashed_url);
