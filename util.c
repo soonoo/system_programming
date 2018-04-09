@@ -183,8 +183,10 @@ bool is_hit(hashed_path *path)
 *   Description     print log message to file descriptor using dprintf() function
 *
 */
-void log_user_input(int fd, log_type type, struct tm* local_time, hashed_path* path)
+void log_user_input(int fd, log_type type, hashed_path* path)
 {
+    time_t current_time = time(NULL);
+    struct tm *local_time = localtime(&current_time);
     switch(type) {
         case hit:
             dprintf(fd, "%s %s/%s-[%d/%02d/%02d, %02d:%02d:%02d]\n",

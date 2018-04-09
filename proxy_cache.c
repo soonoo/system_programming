@@ -21,62 +21,34 @@ int main(void)
     char hashed_url[HASH_PATH_LENGTH + 1];
     char home_dir[MAX_PATH_LENGTH];
     hashed_path path = { 0 };
-    struct tm *local_time = NULL;
-    int fd_logfile;
-    time_t current_time;
     time_t start_time;
     time(&start_time);
-    int hit_count = 0, miss_count = 0;
     int user_input;
+
     // file descriptor of logfile.txt
-    fd_logfile = init(home_dir);
+    int fd_logfile = init(home_dir);
     pid_t pid = getpid();
     int process_count = 0;
 
+    // parent process starts
     while(1) {
-        // quit if bye command entered, continue loop if input is too short
-        user_input = check_user_input(&buf, &current_time, &local_time, hashed_url, &path, pid);
+        user_input = check_user_input(&buf, hashed_url, &path, pid);
+
+        // quit if command equals "quit" and make a child if equals "connect"
         if(user_input == quit) break;
         else if(user_input == connect) {
             process_count++;
             pid = fork();
         } else continue;
 
+        // parent process waits child
         if(pid != 0) {
             wait(NULL);
             continue;
         }
+        // child process
         else {
-            time(&start_time);
-            while(1) {        
-                user_input = check_user_input(&buf, &current_time, &local_time, hashed_url, &path, pid);
-                if(user_input == bye) break;
-                if(user_input == too_short) continue;
-
-                // if hit, print log
-                if(is_hit(&path)) {
-                    hit_count++;
-                    log_user_input(fd_logfile, hit, local_time, &path);
-                }
-
-                // if miss, print log and make file with hashed url
-                else { 
-                    miss_count++;
-                    log_user_input(fd_logfile, miss, local_time, &path);
-                    chdir(CACHE_DIR_NAME);
-
-                    // make directory if not exists
-                    create_dir(path.dir_name);
-
-                    // make file if not exists
-                    open(path.full_path, O_CREAT, MODE_644);
-                    chdir("..");
-                }
-            }
-            // print log when terminating program
-            dprintf(fd_logfile, "%s run time: %d sec. #request hit: %d, miss: %d\n",
-                TERM_LOG_MESSAGE, (int)(time(NULL) - start_time), hit_count, miss_count);
-            exit(0);
+            sub_process(fd_logfile, hashed_url, &path);
         }
     }
     // print log when terminating program
@@ -129,8 +101,6 @@ int init(char* home_dir)
 *
 *   check_user_input
 *   Input               char **             pointer to user input
-*                       time_t *            pointer to current time
-*                       tm **               double pointer to local time
 *                       char *              hashed url
 *                       hashed_path *       pointer to struct with have dir/file name
 *
@@ -147,10 +117,8 @@ int init(char* home_dir)
 */
 input_type check_user_input(
     char **buf,
-    time_t *current_time,
-    struct tm **local_time,
     char *hashed_url,
-    hashed_path* path,
+    hashed_path *path,
     pid_t pid)
 {
     size_t size, len;
@@ -161,10 +129,6 @@ input_type check_user_input(
 
     // quit if input is too short
     if (size < 1) return too_short;
-
-    // get current local time 
-    time(current_time);
-    *local_time = localtime(current_time);
 
     // return command type
     if(strcmp(BYE_COMMAND, *buf) == EQUAL) return bye;
@@ -178,4 +142,44 @@ input_type check_user_input(
     get_hash_path(hashed_url, path);
     strcpy(path->url, *buf);
     return ok;
+}
+
+void sub_process(int fd_logfile, char *hashed_url, hashed_path *path)
+{
+    int hit_count = 0, miss_count = 0;
+    int user_input;
+    char *buf = NULL;
+    struct tm *local_time = NULL;
+    time_t start_time;
+    time(&start_time);
+
+    while(1) {        
+        user_input = check_user_input(&buf, hashed_url, path, 0);
+        if(user_input == bye) break;
+        if(user_input == too_short) continue;
+
+        // if hit, print log
+        if(is_hit(path)) {
+            hit_count++;
+            log_user_input(fd_logfile, hit, path);
+        }
+
+        // if miss, print log and make file with hashed url
+        else { 
+            miss_count++;
+            log_user_input(fd_logfile, miss, path);
+            chdir(CACHE_DIR_NAME);
+
+            // make directory if not exists
+            create_dir(path->dir_name);
+
+            // make file if not exists
+            open(path->full_path, O_CREAT, MODE_644);
+            chdir("..");
+        }
+    }
+    // print log when terminating program
+    dprintf(fd_logfile, "%s run time: %d sec. #request hit: %d, miss: %d\n",
+        TERM_LOG_MESSAGE, (int)(time(NULL) - start_time), hit_count, miss_count);
+    exit(0);
 }

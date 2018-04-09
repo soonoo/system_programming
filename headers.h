@@ -77,15 +77,14 @@ void remove_newline(char *string, size_t *size);
 size_t get_input(char **buf, size_t *len, pid_t pid);
 hashed_path *get_hash_path(char *hashed_url, hashed_path *path);
 bool is_hit(hashed_path *path);
-void log_user_input(int fd, log_type type, struct tm* local_time, hashed_path* path);
+void log_user_input(int fd, log_type type, hashed_path* path);
 void create_dir(char *dir_name);
 input_type check_user_input(
     char **buf,
-    time_t *current_time,
-    struct tm **local_time,
     char *hashed_url,
-    hashed_path* path,
+    hashed_path *path,
     pid_t pid
 );
+void sub_process(int fd_logfile, char *hashed_url, hashed_path *path);
 
 #endif /* __HEADERS_H__ */
