@@ -31,26 +31,26 @@ int main(void)
     // file descriptor of logfile.txt
     fd_logfile = init(home_dir);
     pid_t pid = getpid();
+    int process_count = 0;
 
     while(1) {
         // quit if bye command entered, continue loop if input is too short
-        printf("CMD\n");
         user_input = check_user_input(&buf, &current_time, &local_time, hashed_url, &path, pid);
         if(user_input == quit) break;
-        else if(user_input == connect) pid = fork();
-        else continue;
+        else if(user_input == connect) {
+            process_count++;
+            pid = fork();
+        } else continue;
 
         if(pid != 0) {
             wait(NULL);
-            pid = getpid();
             continue;
         }
         else {
-            pid = getpid();
+            time(&start_time);
             while(1) {        
-                printf("URL\n");
                 user_input = check_user_input(&buf, &current_time, &local_time, hashed_url, &path, pid);
-                if(user_input == bye) exit(0);
+                if(user_input == bye) break;
                 if(user_input == too_short) continue;
 
                 // if hit, print log
@@ -73,12 +73,15 @@ int main(void)
                     chdir("..");
                 }
             }
+            // print log when terminating program
+            dprintf(fd_logfile, "%s run time: %d sec. #request hit: %d, miss: %d\n",
+                TERM_LOG_MESSAGE, (int)(time(NULL) - start_time), hit_count, miss_count);
+            exit(0);
         }
     }
-
     // print log when terminating program
-    dprintf(fd_logfile, "%s run time: %d sec. #request hit: %d, miss: %d\n",
-        TERM_LOG_MESSAGE, (int)(time(NULL) - start_time), hit_count, miss_count);
+    dprintf(fd_logfile, "%s %s run time: %d sec. #sub process: %d\n",
+        TERM_SERVER_MESSAGE, TERM_LOG_MESSAGE, (int)(time(NULL) - start_time), process_count);
     free(buf);
     return 0;
 }

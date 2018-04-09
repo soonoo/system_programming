@@ -30,22 +30,38 @@
 
 #include "hashed_path.h"
 
-#define HASH_LENGTH         40
-#define MAX_PATH_LENGTH     4096
-#define EQUAL               0
+#define HASH_LENGTH             40
+#define MAX_PATH_LENGTH         4096
+#define EQUAL                   0
 
-#define MODE_777            0777
-#define MODE_644            0644
+#define MODE_777                0777
+#define MODE_644                0644
 
-#define BYE_COMMAND         "bye"
-#define CONNECT_COMMAND     "connect"
-#define QUIT_COMMAND        "quit"
-#define CACHE_DIR_NAME      "cache"
-#define LOGFILE_DIR_NAME    "logfile"
-#define LOGFILE_NAME        "logfile.txt"
-#define HIT_LOG_MESSAGE     "[Hit]"
-#define MISS_LOG_MESSAGE    "[Miss]"
-#define TERM_LOG_MESSAGE    "[Terminated]"
+// commands
+#define BYE_COMMAND             "bye"
+#define CONNECT_COMMAND         "connect"
+#define QUIT_COMMAND            "quit"
+
+// directorie and file names
+#define CACHE_DIR_NAME          "cache"
+#define LOGFILE_DIR_NAME        "logfile"
+#define LOGFILE_NAME            "logfile.txt"
+
+// logfile format
+#define HIT_LOG_MESSAGE         "[Hit]"
+#define MISS_LOG_MESSAGE        "[Miss]"
+#define TERM_LOG_MESSAGE        "[Terminated]"
+#define TERM_SERVER_MESSAGE     "**SERVER**"
+
+// terminal text color
+#define TERMINAL_COLOR_RED      "\x1b[31m"
+#define TERMINAL_COLOR_GREEN    "\x1b[32m"
+#define TERMINAL_COLOR_YELLOW   "\x1b[33m"
+#define TERMINAL_COLOR_BLUE     "\x1b[34m"
+#define TERMINAL_COLOR_MAGENTA  "\x1b[35m"
+#define TERMINAL_COLOR_CYAN     "\x1b[36m"
+#define TERMINAL_COLOR_RESET    "\x1b[0m"
+
 
 typedef enum { bye, too_short, ok, connect, quit } input_type;
 typedef enum { hit, miss } log_type;

@@ -94,7 +94,11 @@ void remove_newline(char *string, size_t *size)
 */
 size_t get_input(char **buf, size_t *len, pid_t pid)
 {
-    printf("[%d]input URL > ", pid);
+    printf("[%d]input ", getpid());
+
+    if(pid == 0) printf(TERMINAL_COLOR_RED "%s " TERMINAL_COLOR_RESET "> ", "URL"); 
+    else printf(TERMINAL_COLOR_CYAN "%s " TERMINAL_COLOR_RESET  "> ", "CMD");
+
     return getline(buf, len, stdin);
 }
 
