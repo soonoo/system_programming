@@ -6,7 +6,7 @@
 *   Author          Hong Soonwoo
 *   Student ID      2014722023
 *
-*   Title           2018-1 System programming #1-1
+*   Title           2018-1 System programming #1-3
 *   Description     Includes standard library headers and custom functions/macros declaration
 *
 */
@@ -30,19 +30,21 @@
 
 #include "hashed_path.h"
 
+// file and directory name length
 #define HASH_LENGTH             40
 #define MAX_PATH_LENGTH         4096
 #define EQUAL                   0
 
+// permissions
 #define MODE_777                0777
 #define MODE_644                0644
 
-// commands
+// user commands
 #define BYE_COMMAND             "bye"
 #define CONNECT_COMMAND         "connect"
 #define QUIT_COMMAND            "quit"
 
-// directorie and file names
+// directory and file names
 #define CACHE_DIR_NAME          "cache"
 #define LOGFILE_DIR_NAME        "logfile"
 #define LOGFILE_NAME            "logfile.txt"
@@ -62,13 +64,24 @@
 #define TERMINAL_COLOR_CYAN     "\x1b[36m"
 #define TERMINAL_COLOR_RESET    "\x1b[0m"
 
-
+// enum for user input type
 typedef enum { bye, too_short, ok, connect, quit } input_type;
+
+// enum for hit/miss
 typedef enum { hit, miss } log_type;
+
+// enum for bool type variables
 typedef enum { false, true } bool;
 
 // part of main function
 int init(char* home_dir);
+input_type check_user_input(
+    char **buf,
+    char *hashed_url,
+    hashed_path *path,
+    pid_t pid
+);
+void sub_process(int fd_logfile, char *hashed_url, hashed_path *path);
 
 // utility functions
 char *sha1_hash(char *input_url, char *hashed_url);
@@ -79,12 +92,5 @@ hashed_path *get_hash_path(char *hashed_url, hashed_path *path);
 bool is_hit(hashed_path *path);
 void log_user_input(int fd, log_type type, hashed_path* path);
 void create_dir(char *dir_name);
-input_type check_user_input(
-    char **buf,
-    char *hashed_url,
-    hashed_path *path,
-    pid_t pid
-);
-void sub_process(int fd_logfile, char *hashed_url, hashed_path *path);
 
 #endif /* __HEADERS_H__ */

@@ -7,8 +7,8 @@
 *   Student ID      2014722023
 *   
 *   Title           2018-1 System programming #1-3
-*   Description     Gets an input URL from stdin.
-*                   If the URL was first entered, create the directory with hash value
+*   Description     make a child process when 'connect' input id entered
+*                   quit when 'quit' command is entered
 *
 */
 
@@ -32,25 +32,26 @@ int main(void)
 
     // parent process starts
     while(1) {
+        // get user input
         user_input = check_user_input(&buf, hashed_url, &path, pid);
 
-        // quit if command equals "quit" and make a child if equals "connect"
+        // quit if command equals "quit" or fork if equals "connect"
         if(user_input == quit) break;
         else if(user_input == connect) {
             process_count++;
             pid = fork();
         } else continue;
 
-        // parent process waits child
         if(pid != 0) {
+            // parent process
             wait(NULL);
             continue;
-        }
-        // child process
-        else {
+        } else {
+            // child process
             sub_process(fd_logfile, hashed_url, &path);
         }
     }
+
     // print log when terminating program
     dprintf(fd_logfile, "%s %s run time: %d sec. #sub process: %d\n",
         TERM_SERVER_MESSAGE, TERM_LOG_MESSAGE, (int)(time(NULL) - start_time), process_count);
@@ -103,6 +104,7 @@ int init(char* home_dir)
 *   Input               char **             pointer to user input
 *                       char *              hashed url
 *                       hashed_path *       pointer to struct with have dir/file name
+*                       pid_t               0 if child process, or parent process
 *
 *   Output              enum input_type     0 when command equals "bye"
 *                                           1 when command is too short
@@ -144,6 +146,24 @@ input_type check_user_input(
     return ok;
 }
 
+
+/*
+*
+*   sub_process
+*   Input               int                 file descriptor of logfile.txt
+*                       char *              hashed url
+*                       hashed_path *       pointer to struct which has dir/file name
+*
+*   Output              enum input_type     0 when command equals "bye"
+*                                           1 when command is too short
+*                                           2 when command is valid
+*
+*   Description         get user input and determine hit/miss
+*                       make file if miss
+*                       log to logfile.txt at each user input
+*                       return when user input equals "bye"
+*
+*/
 void sub_process(int fd_logfile, char *hashed_url, hashed_path *path)
 {
     int hit_count = 0, miss_count = 0;
@@ -178,7 +198,7 @@ void sub_process(int fd_logfile, char *hashed_url, hashed_path *path)
             chdir("..");
         }
     }
-    // print log when terminating program
+    // print log when terminating process
     dprintf(fd_logfile, "%s run time: %d sec. #request hit: %d, miss: %d\n",
         TERM_LOG_MESSAGE, (int)(time(NULL) - start_time), hit_count, miss_count);
     exit(0);

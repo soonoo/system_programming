@@ -86,6 +86,7 @@ void remove_newline(char *string, size_t *size)
 *   get_input
 *   Input           char **     double pointer to a user input
 *                   size_t *    buffer
+*                   pid_t       0 if child process, or parent process
 *
 *   Output          size_t      size of user input
 *
@@ -176,7 +177,9 @@ bool is_hit(hashed_path *path)
 /*
 *
 *   log_user_input
-*   Input           enum log_type       one of three log message type: hit, miss, terminate
+*   Input           int                 file descriptor of logfile.txt
+*                   enum log_type       one of three log message type: hit, miss, terminate
+*                   hasned_path *       hashed path string
 *
 *   Output          void
 *
