@@ -7,7 +7,7 @@
 *   Student ID      2014722023
 *
 *   Title           2018-1 System programming #1-3
-*   Description     Includes standard library headers and custom functions/macros declaration
+*   Description     Includes standard libraries and custom functions/macros declaration
 *
 */
 

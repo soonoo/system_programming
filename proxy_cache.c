@@ -154,14 +154,10 @@ input_type check_user_input(
 *                       char *              hashed url
 *                       hashed_path *       pointer to struct which has dir/file name
 *
-*   Output              enum input_type     0 when command equals "bye"
-*                                           1 when command is too short
-*                                           2 when command is valid
-*
-*   Description         get user input and determine hit/miss
-*                       make file if miss
-*                       log to logfile.txt at each user input
-*                       return when user input equals "bye"
+*   Description         get user input and determine hit/miss.
+*                       make file if miss.
+*                       log to logfile.txt at each user input.
+*                       exit when user input equals "bye"
 *
 */
 void sub_process(int fd_logfile, char *hashed_url, hashed_path *path)

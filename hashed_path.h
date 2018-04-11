@@ -23,8 +23,14 @@
 
 typedef struct {
     char url[MAX_URL_LENGTH];
+
+    // first 3 letters of checksum
     char dir_name[DIR_NAME_LENGTH + 1];
+
+    // last 37 letters of checksum
     char file_name[FILE_NAME_LENGTH + 1];
+
+    // ex. "d8b/99f68b208b5453b391cb0c6c3d6a9824f3c3a"
     char full_path[HASH_PATH_LENGTH + 1];
 } hashed_path;
 
