@@ -194,14 +194,14 @@ void log_user_input(int fd, log_type type, hashed_path* path)
         case hit:
             dprintf(fd, "%s %s/%s-[%d/%02d/%02d, %02d:%02d:%02d]\n",
                 HIT_LOG_MESSAGE, path->dir_name, path->file_name,
-                1900 + local_time->tm_year, local_time->tm_mon, local_time->tm_mday,
+                1900 + local_time->tm_year, local_time->tm_mon + 1, local_time->tm_mday,
                 local_time->tm_hour, local_time->tm_min, local_time->tm_sec);
             dprintf(fd, "%s %s\n", HIT_LOG_MESSAGE, path->url);
             return;
         case miss:
             dprintf(fd, "%s %s-[%d/%02d/%02d, %02d:%02d:%02d]\n",
                 MISS_LOG_MESSAGE, path->url,
-                1900 + local_time->tm_year, local_time->tm_mon, local_time->tm_mday,
+                1900 + local_time->tm_year, local_time->tm_mon + 1, local_time->tm_mday,
                 local_time->tm_hour, local_time->tm_min, local_time->tm_sec);
             return;
     }
