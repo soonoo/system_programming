@@ -1,12 +1,16 @@
-OBJS = proxy_cache.o util.o
+OBJS = server.o util.o
 CC = gcc
-TARGET = proxy_cache
+TARGETS = Server Client
+SERVER = Server
+CLIENT = Client
 FLAGS = -Wall -o
 
-all: $(TARGET)
+all: $(TARGETS)
 
-$(TARGET): $(OBJS)
+$(SERVER): $(OBJS)
 	$(CC) $(FLAGS) $@ $^ -lcrypto
+
+$(CLIENT): 
 	make clean
 
 clean:

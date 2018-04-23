@@ -26,6 +26,8 @@
 #include <pwd.h>
 #include <fcntl.h>
 #include <time.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 #include <errno.h>
 
 #include "hashed_path.h"
@@ -65,7 +67,7 @@
 #define TERMINAL_COLOR_RESET    "\x1b[0m"
 
 // enum for user input type
-typedef enum { bye, too_short, ok, connect, quit } input_type;
+typedef enum { bye, too_short, ok, _connect, quit } input_type;
 
 // enum for hit/miss
 typedef enum { hit, miss } log_type;

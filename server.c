@@ -14,6 +14,8 @@
 
 #include "headers.h"
 
+#define PORTNO  50001
+
 int main(void)
 {
     char *buf = NULL;
@@ -27,8 +29,35 @@ int main(void)
 
     // file descriptor of logfile.txt
     int fd_logfile = init(home_dir);
-    pid_t pid = getpid();
+    pid_t pid;
     int process_count = 0;
+
+    //
+    struct sockaddr_in server_addr = { 0 }, client_addr = { 0 };
+    int socket_fd, client_fd;
+    int len, len_out;
+
+    if((socket_fd = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
+        printf("SERVER: cannot open stream.\n");
+        return 0;
+    }
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    server_addr.sin_port = htons(PORTNO);
+
+    if(bind(socket_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
+        printf("SERVER: cannot bind local address.\n");
+        return 0;
+    }
+    listen(socket_fd, 10);
+    client_fd = accept(socket_fd, (struct sockaddr *)&client_addr, &len);
+
+    if(client_fd < 0) {
+        printf("SERVER: accept failed.");
+        return 0;
+    }
+
+    pid = fork();
 
     // parent process starts
     while(1) {
@@ -37,7 +66,7 @@ int main(void)
 
         // quit if command equals "quit" or fork if equals "connect"
         if(user_input == quit) break;
-        else if(user_input == connect) {
+        else if(user_input == _connect) {
             process_count++;
             pid = fork();
         } else continue;
@@ -134,7 +163,7 @@ input_type check_user_input(
 
     // return command type
     if(strcmp(BYE_COMMAND, *buf) == EQUAL) return bye;
-    if(strcmp(CONNECT_COMMAND, *buf) == EQUAL) return connect;
+    if(strcmp(CONNECT_COMMAND, *buf) == EQUAL) return _connect;
     if(strcmp(QUIT_COMMAND, *buf) == EQUAL) return quit;
 
     // hash url
