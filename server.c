@@ -14,7 +14,14 @@
 
 #include "headers.h"
 
-#define PORTNO  50001
+#define CLIENT_INPUT_SIZE   1024
+
+static void handler()
+{
+    pid_t pid;
+    int status;
+    while((pid = waitpid(-1, &status, WNOHANG)) > 0);
+}
 
 int main(void)
 {
@@ -36,6 +43,7 @@ int main(void)
     struct sockaddr_in server_addr = { 0 }, client_addr = { 0 };
     int socket_fd, client_fd;
     int len, len_out;
+    char client_input[CLIENT_INPUT_SIZE] = { 0, };
 
     if((socket_fd = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
         printf("SERVER: cannot open stream.\n");
@@ -50,14 +58,39 @@ int main(void)
         return 0;
     }
     listen(socket_fd, 10);
-    client_fd = accept(socket_fd, (struct sockaddr *)&client_addr, &len);
+    signal(SIGCHLD, (void *)handler);
 
-    if(client_fd < 0) {
-        printf("SERVER: accept failed.");
-        return 0;
+    while(1) {
+        len = sizeof(client_addr);
+        client_fd = accept(socket_fd, (struct sockaddr *)&client_addr, &len);
+
+        if(client_fd < 0) {
+            printf("SERVER: accept failed.");
+            return 0;
+        }
+
+        pid = fork();
+        
+        if(pid == -1) {
+            close(client_fd);
+            close(socket_fd);
+            continue;
+        }
+        if(pid == 0) {
+            while((len_out = read(client_fd, client_input, CLIENT_INPUT_SIZE))) {
+                if(strcmp(client_input, "bye") == 0) {
+                    break;
+                }
+                printf("%s\n", client_input);
+                write(client_fd, client_input, len_out);
+            }
+            close(client_fd);
+            exit(0);
+        }
+        close(client_fd);
     }
-
-    pid = fork();
+    close(client_fd);
+    return 0;
 
     // parent process starts
     while(1) {

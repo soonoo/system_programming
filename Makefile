@@ -10,8 +10,8 @@ all: $(TARGETS)
 $(SERVER): $(OBJS)
 	$(CC) $(FLAGS) $@ $^ -lcrypto
 
-$(CLIENT): 
-	make clean
+$(CLIENT): client.c
+	$(CC) $(FLAGS) $@ $^	
 
 clean:
 	rm -f *.o

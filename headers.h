@@ -29,8 +29,12 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <errno.h>
+#include <arpa/inet.h>
 
 #include "hashed_path.h"
+
+// server port number
+#define PORTNO                  38042
 
 // file and directory name length
 #define HASH_LENGTH             40
