@@ -4,6 +4,8 @@
 # Prerequisites
 *.d
 proxy_cache
+Server
+Client
 
 # Object files
 *.o

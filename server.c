@@ -54,7 +54,7 @@ int main(void)
     server_addr.sin_port = htons(PORTNO);
 
     if(bind(socket_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
-        printf("SERVER: cannot bind local address.\n");
+        printf("SERVER: %s\n", strerror(errno));
         return 0;
     }
     listen(socket_fd, 10);
@@ -77,6 +77,9 @@ int main(void)
             continue;
         }
         if(pid == 0) {
+            char ipAddress[16] = { 0, };
+            printf("[%s : %d] Client was connected.\n",
+                inet_ntop(AF_INET, &(client_addr.sin_addr), ipAddress, 16), ntohs(client_addr.sin_port));
             while((len_out = read(client_fd, client_input, CLIENT_INPUT_SIZE))) {
                 if(strcmp(client_input, "bye") == 0) {
                     break;

@@ -23,6 +23,13 @@ int main(void)
         return -1;
     }
 
+    struct sockaddr_in sin;
+    socklen_t len_sock = sizeof(sin);
+    if (getsockname(socket_fd, (struct sockaddr *)&sin, &len_sock) == -1)
+        perror("getsockname");
+    else
+        printf("port number %d\n", ntohs(sin.sin_port));
+
     printf("> ");
     while((len = read(STDOUT_FILENO, buf, sizeof(buf))) > 0) {
         if(write(socket_fd, buf, strlen(buf)) > 0) {
