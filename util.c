@@ -6,13 +6,12 @@
 *   Author          Hong Soonwoo
 *   Student ID      2014722023
 *   
-*   Title           2018-1 System programming #1-3
-*   Description     Utility functions for string manipulation, getting user input
+*   Title           #2-1 utility functions 
+*   Description     Utility functions for getting user input, string manipulation used in server/client
 *
 */
 
 #include "headers.h"
-
 
 /*
 *
@@ -83,13 +82,12 @@ void remove_newline(char *string, size_t size)
 /*
 *
 *   get_input
-*   Input           char **     double pointer to a user input
-*                   size_t *    buffer
-*                   pid_t       0 if child process, or parent process
+*   Input           char *      pointer to a buffer
+*                   int         buffer size
 *
-*   Output          size_t      size of user input
+*   Output          char *      pointer to user input
 *
-*   Description     get user input using getline()
+*   Description     get user input using fgets()
 *
 */
 char *get_input(char *buf, int size)
@@ -176,6 +174,7 @@ bool is_hit(hashed_path *path)
 *   Input           int                 file descriptor of logfile.txt
 *                   enum log_type       one of three log message type: hit, miss, terminate
 *                   hasned_path *       hashed path string
+*                   pid_t               process id of sub process
 *
 *   Output          void
 *
@@ -223,24 +222,18 @@ void create_dir(char *dir_name)
 /*
 *
 *   check_user_input
-*   Input               char **             pointer to user input
-*                       pid_t               0 if child process, or parent process
+*   Input               char *              pointer to user input
 *
-*   Output              enum input_type     0 when command equals "bye"
-*                                           1 when command is too short
-*                                           2 when command is valid
+*   Output              enum input_type     too_short when input is too short
+*                                           bye when input equals 'bye'
+*                                           ok when input is valid
 *
-*   Description         get user input and check if bye command is entered
+*   Description         get user input and determine command type
 *
 */
 input_type check_user_input(char *buf)
 {
-    // quit if input is too short
-    if (strlen(buf) < 1) return too_short;
-
-    // return command type
+    if(strlen(buf) < 1) return too_short;
     if(strcmp(BYE_COMMAND, buf) == EQUAL) return bye;
-    if(strcmp(CONNECT_COMMAND, buf) == EQUAL) return _connect;
-    if(strcmp(QUIT_COMMAND, buf) == EQUAL) return quit;
     return ok;
 }

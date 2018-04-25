@@ -33,13 +33,15 @@
 
 #include "hashed_path.h"
 
-// server port number
+// server configurations
 #define PORTNO                  38042
+#define SERVER_ADDR             "127.0.0.1"
 
 // file and directory name length
 #define HASH_LENGTH             40
 #define MAX_PATH_LENGTH         4096
 #define EQUAL                   0
+#define INPUT_SIZE              2048
 
 // permissions
 #define MODE_777                0777
@@ -72,7 +74,7 @@
 #define TERMINAL_COLOR_RESET    "\x1b[0m"
 
 // enum for user input type
-typedef enum { bye, too_short, ok, _connect, quit } input_type;
+typedef enum { bye, too_short, ok } input_type;
 
 // enum for hit/miss
 typedef enum { hit, miss } log_type;
