@@ -30,15 +30,20 @@ int main(void)
     else
         printf("port number %d\n", ntohs(sin.sin_port));
 
-    printf("> ");
-    while((len = read(STDOUT_FILENO, buf, sizeof(buf))) > 0) {
-        if(write(socket_fd, buf, strlen(buf)) > 0) {
+    while(1) {
+        int input_type;
+        get_input(buf, sizeof(buf));
+        remove_newline(buf, (size_t)strlen(buf));
+
+        input_type = check_user_input(buf);
+        if(input_type == too_short) continue;
+        if(input_type == bye) break;
+
+        if(write(socket_fd, buf, strlen(buf) + 1) > 0) {
             if((len = read(socket_fd, buf, sizeof(buf))) > 0) {
                 printf("%s\n", buf);
-                bzero(buf, sizeof(buf));
             }
         }
-        printf("> ");
     }
     close(socket_fd);
     return 0;

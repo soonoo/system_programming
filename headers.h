@@ -56,10 +56,11 @@
 #define LOGFILE_NAME            "logfile.txt"
 
 // logfile format
-#define HIT_LOG_MESSAGE         "[Hit]"
-#define MISS_LOG_MESSAGE        "[Miss]"
-#define TERM_LOG_MESSAGE        "[Terminated]"
-#define TERM_SERVER_MESSAGE     "**SERVER**"
+#define HIT_LOG                 "[Hit]"
+#define MISS_LOG                "[Miss]"
+#define TERM_LOG                "[Terminated]"
+#define TERM_SERVER_LOG         "**SERVER**"
+#define SERVER_PID_LOG          "ServerPID"
 
 // terminal text color
 #define TERMINAL_COLOR_RED      "\x1b[31m"
@@ -81,22 +82,17 @@ typedef enum { false, true } bool;
 
 // part of main function
 int init(char* home_dir);
-input_type check_user_input(
-    char **buf,
-    char *hashed_url,
-    hashed_path *path,
-    pid_t pid
-);
-void sub_process(int fd_logfile, char *hashed_url, hashed_path *path);
+input_type check_user_input(char *buf);
+void sub_process(int fd_logfile, int client_fd, char *home_dir, struct sockaddr_in *client_addr);
 
 // utility functions
 char *sha1_hash(char *input_url, char *hashed_url);
 char *getHomeDir(char *home);
-void remove_newline(char *string, size_t *size);
-size_t get_input(char **buf, size_t *len, pid_t pid);
+void remove_newline(char *string, size_t size);
+char *get_input(char *buf, int size);
 hashed_path *get_hash_path(char *hashed_url, hashed_path *path);
 bool is_hit(hashed_path *path);
-void log_user_input(int fd, log_type type, hashed_path* path);
+void log_user_input(int fd, log_type type, hashed_path* path, pid_t pid);
 void create_dir(char *dir_name);
 
 #endif /* __HEADERS_H__ */

@@ -71,12 +71,11 @@ char *getHomeDir(char *home)
 *   Description     removes new line character at the end of string
 *
 */
-void remove_newline(char *string, size_t *size)
+void remove_newline(char *string, size_t size)
 {
-    if ((*size) == 0 || string == NULL) return;
-    if (string[(*size) - 1] == '\n') {
-        string[(*size) - 1] = '\0';
-        (*size)--;
+    if (size == 0 || string == NULL) return;
+    if (string[size - 1] == '\n') {
+        string[size - 1] = '\0';
     }
 }
 
@@ -93,14 +92,11 @@ void remove_newline(char *string, size_t *size)
 *   Description     get user input using getline()
 *
 */
-size_t get_input(char **buf, size_t *len, pid_t pid)
+char *get_input(char *buf, int size)
 {
-    printf("[%d]input ", getpid());
+    printf("input URL > ");
 
-    if(pid == 0) printf(TERMINAL_COLOR_RED "%s " TERMINAL_COLOR_RESET "> ", "URL"); 
-    else printf(TERMINAL_COLOR_CYAN "%s " TERMINAL_COLOR_RESET  "> ", "CMD");
-
-    return getline(buf, len, stdin);
+    return fgets(buf, size, stdin);
 }
 
 
@@ -186,21 +182,21 @@ bool is_hit(hashed_path *path)
 *   Description     print log message to file descriptor using dprintf() function
 *
 */
-void log_user_input(int fd, log_type type, hashed_path* path)
+void log_user_input(int fd, log_type type, hashed_path* path, pid_t pid)
 {
     time_t current_time = time(NULL);
     struct tm *local_time = localtime(&current_time);
     switch(type) {
         case hit:
-            dprintf(fd, "%s %s/%s-[%d/%02d/%02d, %02d:%02d:%02d]\n",
-                HIT_LOG_MESSAGE, path->dir_name, path->file_name,
+            dprintf(fd, "%s %s : %d | %s/%s-[%d/%02d/%02d, %02d:%02d:%02d]\n",
+                HIT_LOG, SERVER_PID_LOG, pid, path->dir_name, path->file_name,
                 1900 + local_time->tm_year, local_time->tm_mon + 1, local_time->tm_mday,
                 local_time->tm_hour, local_time->tm_min, local_time->tm_sec);
-            dprintf(fd, "%s %s\n", HIT_LOG_MESSAGE, path->url);
+            dprintf(fd, "%s %s\n", HIT_LOG, path->url);
             return;
         case miss:
-            dprintf(fd, "%s %s-[%d/%02d/%02d, %02d:%02d:%02d]\n",
-                MISS_LOG_MESSAGE, path->url,
+            dprintf(fd, "%s %s : %d | %s-[%d/%02d/%02d, %02d:%02d:%02d]\n",
+                MISS_LOG, SERVER_PID_LOG, pid, path->url,
                 1900 + local_time->tm_year, local_time->tm_mon + 1, local_time->tm_mday,
                 local_time->tm_hour, local_time->tm_min, local_time->tm_sec);
             return;
@@ -222,4 +218,29 @@ void create_dir(char *dir_name)
     DIR *dp;
     if((dp = opendir(dir_name)) == NULL) mkdir(dir_name, MODE_777);
     if(dp) closedir(dp);
+}
+
+/*
+*
+*   check_user_input
+*   Input               char **             pointer to user input
+*                       pid_t               0 if child process, or parent process
+*
+*   Output              enum input_type     0 when command equals "bye"
+*                                           1 when command is too short
+*                                           2 when command is valid
+*
+*   Description         get user input and check if bye command is entered
+*
+*/
+input_type check_user_input(char *buf)
+{
+    // quit if input is too short
+    if (strlen(buf) < 1) return too_short;
+
+    // return command type
+    if(strcmp(BYE_COMMAND, buf) == EQUAL) return bye;
+    if(strcmp(CONNECT_COMMAND, buf) == EQUAL) return _connect;
+    if(strcmp(QUIT_COMMAND, buf) == EQUAL) return quit;
+    return ok;
 }

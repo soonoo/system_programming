@@ -1,4 +1,5 @@
-OBJS = server.o util.o
+SERVER_OBJS = server.o util.o
+CLIENT_OBJS = client.o util.o
 CC = gcc
 TARGETS = Server Client
 SERVER = Server
@@ -7,12 +8,11 @@ FLAGS = -Wall -o
 
 all: $(TARGETS)
 
-$(SERVER): $(OBJS)
+$(SERVER): $(SERVER_OBJS)
 	$(CC) $(FLAGS) $@ $^ -lcrypto
-	make clean
 
-$(CLIENT): client.c
-	$(CC) $(FLAGS) $@ $^
+$(CLIENT): $(CLIENT_OBJS)
+	$(CC) $(FLAGS) $@ $^ -lcrypto
 	make clean
 
 clean:
