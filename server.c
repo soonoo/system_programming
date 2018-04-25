@@ -46,6 +46,7 @@ int main(void)
 
     // mark the socket_fd as a passive socket
     listen(socket_fd, 10);
+    printf("listening on port %d\n", PORTNO);
 
     // handle SIGCHILD signal
     signal(SIGCHLD, (void *)sigchld_handler);

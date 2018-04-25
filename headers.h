@@ -84,8 +84,8 @@ typedef enum { false, true } bool;
 
 // part of main function
 int init(char* home_dir);
-input_type check_user_input(char *buf);
 void sub_process(int fd_logfile, int client_fd, char *home_dir, struct sockaddr_in *client_addr);
+static void sigchld_handler();
 
 // utility functions
 char *sha1_hash(char *input_url, char *hashed_url);
@@ -95,6 +95,7 @@ char *get_input(char *buf, int size);
 hashed_path *get_hash_path(char *hashed_url, hashed_path *path);
 bool is_hit(hashed_path *path);
 void log_user_input(int fd, log_type type, hashed_path* path, pid_t pid);
+input_type check_user_input(char *buf);
 void create_dir(char *dir_name);
 
 #endif /* __HEADERS_H__ */
