@@ -73,6 +73,7 @@ int main(void)
 
         // child process
         if(pid == 0) {
+            printf("%d\n", getpid());
             sub_process(fd_logfile, client_fd, home_dir, &client_addr);
         }
 
@@ -158,6 +159,9 @@ void sub_process(int fd_logfile, int client_fd, char *home_dir, struct sockaddr_
     time(&start_time);
     pid_t pid = getpid();
     char ipAddress[16] = { 0, };
+    struct in_addr inet_client_address;
+    inet_client_address.s_addr = client_addr->sin_addr.s_addr; 
+    char response[2000] = { 0, };
 
     int len_out;
     hashed_path path = { 0 };
@@ -166,47 +170,49 @@ void sub_process(int fd_logfile, int client_fd, char *home_dir, struct sockaddr_
     printf("[%s : %d] Client was connected.\n",
         inet_ntop(AF_INET, &(client_addr->sin_addr), ipAddress, 16), ntohs(client_addr->sin_port));
 
-    while((len_out = read(client_fd, client_input, INPUT_SIZE))) {
-        // hash url
-        sha1_hash(client_input, hashed_url);
+    read(client_fd, client_input, INPUT_SIZE);
+    puts(client_input);
+    // hash url
+    // sha1_hash(client_input, hashed_url);
 
-        // get directory name and file name from checksum
-        get_hash_path(hashed_url, &path);
-        strcpy(path.url, client_input);
+    // // get directory name and file name from checksum
+    // get_hash_path(hashed_url, &path);
+    // strcpy(path.url, client_input);
 
-        if(strcmp(client_input, "bye") == 0) {
-            break;
-        }
+    // // if hit, print log
+    // if(is_hit(&path)) {
+    //     hit_count++;
+    //     log_user_input(fd_logfile, hit, &path, pid);
+    //     write(client_fd, "HIT\0", 4);
+    // }
 
-        // if hit, print log
-        if(is_hit(&path)) {
-            hit_count++;
-            log_user_input(fd_logfile, hit, &path, pid);
-            write(client_fd, "HIT\0", 4);
-        }
+    // // if miss, print log and make file with hashed url
+    // else { 
+    //     miss_count++;
+    //     log_user_input(fd_logfile, miss, &path, pid);
+    //     chdir(CACHE_DIR_NAME);
 
-        // if miss, print log and make file with hashed url
-        else { 
-            miss_count++;
-            log_user_input(fd_logfile, miss, &path, pid);
-            chdir(CACHE_DIR_NAME);
+    //     // make directory if not exists
+    //     create_dir(path.dir_name);
 
-            // make directory if not exists
-            create_dir(path.dir_name);
+    //     // make file if not exists
+    //     open(path.full_path, O_CREAT, MODE_644);
+    //     chdir("..");
+    //     write(client_fd, "MISS\0", 5);
+    // }
 
-            // make file if not exists
-            open(path.full_path, O_CREAT, MODE_644);
-            chdir("..");
-            write(client_fd, "MISS\0", 5);
-        }
-    }
-
-    // print log when terminating process
-    dprintf(fd_logfile, "%s %s : %d | run time: %d sec. #request hit: %d, miss: %d\n",
-        TERM_LOG, SERVER_PID_LOG, pid, (int)(time(NULL) - start_time), hit_count, miss_count);
-
+    // // print log when terminating process
+    // dprintf(fd_logfile, "%s %s : %d | run time: %d sec. #request hit: %d, miss: %d\n",
+    //     TERM_LOG, SERVER_PID_LOG, pid, (int)(time(NULL) - start_time), hit_count, miss_count);
+    sprintf(response,
+            "HTTP/1.0 200 OK\r\n"
+            "Server:SOONOO_SERVER\r\n"
+            "Content-length:%lu\r\n"
+            "Content-type:text/html\r\n\r\n"
+            "<h1>HIT</h1>", strlen("<h1>HIT</h1>"));
+    write(client_fd, response, strlen(response));
     close(client_fd);    
-    printf("[%s : %d] Client was disconnected.\n",
-        inet_ntop(AF_INET, &(client_addr->sin_addr), ipAddress, 16), ntohs(client_addr->sin_port));
+    // printf("[%s : %d] Client was disconnected.\n",
+    //     inet_ntop(AF_INET, &(client_addr->sin_addr), ipAddress, 16), ntohs(client_addr->sin_port));
     exit(0);
 }
