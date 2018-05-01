@@ -237,3 +237,9 @@ input_type check_user_input(char *buf)
     if(strcmp(BYE_COMMAND, buf) == EQUAL) return bye;
     return ok;
 }
+
+char *get_url(char *buf)
+{
+    strtok(buf, " ");
+    return strtok(NULL, " ");
+}

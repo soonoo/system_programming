@@ -97,5 +97,6 @@ bool is_hit(hashed_path *path);
 void log_user_input(int fd, log_type type, hashed_path* path, pid_t pid);
 input_type check_user_input(char *buf);
 void create_dir(char *dir_name);
+char *get_url(char *buf);
 
 #endif /* __HEADERS_H__ */
