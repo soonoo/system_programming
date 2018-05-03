@@ -68,6 +68,7 @@ int main(void)
             perror("fork() error");
             close(client_fd);
             close(socket_fd);
+            close(fd_logfile);
             return -1;
         }
 
@@ -79,6 +80,8 @@ int main(void)
         // parent process closes socket and continue to get uer input
         close(client_fd);
     }
+    close(socket_fd);
+    close(fd_logfile);
     return 0;
 }
 
