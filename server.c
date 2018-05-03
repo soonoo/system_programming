@@ -6,7 +6,7 @@
 *   Author          Hong Soonwoo
 *   Student ID      2014722023
 *   
-*   Title           #2-1 Server program
+*   Title           #2-2 Server program
 *   Description     Wait for connection from client.
 *                   Call fork() when connection is established.
 *                   Connection is handled in sub_process()
@@ -157,52 +157,60 @@ void sub_process(int fd_logfile, int client_fd, char *home_dir, struct sockaddr_
     time_t start_time;
     time(&start_time);
     pid_t pid = getpid();
-    char ipAddress[16] = { 0, };
-    struct in_addr inet_client_address;
-    inet_client_address.s_addr = client_addr->sin_addr.s_addr; 
     char response[2000] = { 0, };
     char *index = response;
     char *url;
 
-    int len_out;
     hashed_path path = { 0 };
     char hashed_url[HASH_PATH_LENGTH + 1];
 
     read(client_fd, client_input, INPUT_SIZE);
-    // printf("%s", get_url(client_input));
 
+    // get URL from first line of request message
     url = get_url(client_input);
+
     // hash url
     sha1_hash(url, hashed_url);
 
     // get directory name and file name from checksum
     get_hash_path(hashed_url, &path);
-    strcpy(path.url, client_input);
+    strcpy(path.url, url);
 
+    // set response message header and remember string's last index
     index += sprintf(response,
                 "HTTP/1.0 200 OK\r\n"
                 "Server:SOONOO_SERVER\r\n"
-                "Content-length:%lu\r\n"
-                "Content-type:text/html\r\n\r\n"
-                "<h1>", strlen("<h1>HIT</h1>")
+                "Content-type:text/html;charset=utf-8\r\n"
             );
 
     // if hit, print log
     if(is_hit(&path)) {
         printf("HIT");
+
+        // set content-length and response body
+        sprintf(index, 
+                "Content-length:%lu\r\n\r\n"
+                "<h1>HIT</h1>", strlen("<h1>HIT</h1>")
+                );
         hit_count++;
+
         log_user_input(fd_logfile, hit, &path, pid);
-        sprintf(index, "HIT</h1>");
     }
 
     // if miss, print log and make file with hashed url
     else { 
         printf("MISS");
-        miss_count++;
-        log_user_input(fd_logfile, miss, &path, pid);
-        chdir(CACHE_DIR_NAME);
-        sprintf(index, "MISS</h1>");
 
+        // set content-length and response body
+        sprintf(index, 
+                "Content-length:%lu\r\n\r\n"
+                "<h1>MISS</h1>", strlen("<h1>MISS</h1>")
+                );
+        miss_count++;
+
+        log_user_input(fd_logfile, miss, &path, pid);
+
+        chdir(CACHE_DIR_NAME);
         // make directory if not exists
         create_dir(path.dir_name);
 
@@ -210,6 +218,8 @@ void sub_process(int fd_logfile, int client_fd, char *home_dir, struct sockaddr_
         open(path.full_path, O_CREAT, MODE_644);
         chdir("..");
     }
+    
+    // print requested url to terminal
     printf(" %s\n", url);
 
     // print log when terminating process

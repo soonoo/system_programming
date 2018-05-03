@@ -6,7 +6,7 @@
 *   Author          Hong Soonwoo
 *   Student ID      2014722023
 *   
-*   Title           #2-1 utility functions 
+*   Title           #2-2 utility functions 
 *   Description     Utility functions for getting user input, string manipulation used in server/client
 *
 */
@@ -238,6 +238,16 @@ input_type check_user_input(char *buf)
     return ok;
 }
 
+/*
+*
+*   get_url
+*   Input               char *              pointer to HTTP request message
+*
+*   Output              char *              pointer to url
+*
+*   Description         return pointer of url in HTTP request message
+*
+*/
 char *get_url(char *buf)
 {
     strtok(buf, " ");

@@ -6,7 +6,7 @@
 *   Author          Hong Soonwoo
 *   Student ID      2014722023
 *
-*   Title           2018-1 System programming #1-1
+*   Title           2018-1 System programming #2-2
 *   Description     Struct for hashed url path
 *                   - dir_name:     first 3 letters of hashed url
 *                   - file_name:    remaining 37 letters of hashed url
