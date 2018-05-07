@@ -37,6 +37,7 @@
 // server configurations
 #define PORTNO                  38042
 #define SERVER_ADDR             "127.0.0.1"
+#define HTTP_PORTNO             80
 
 // file and directory name length
 #define HASH_LENGTH             40
@@ -100,5 +101,6 @@ input_type check_user_input(char *buf);
 void create_dir(char *dir_name);
 char *get_url(char *buf);
 char *get_host(char *buf);
+void request(char *request_message);
 
 #endif /* __HEADERS_H__ */

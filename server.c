@@ -177,59 +177,104 @@ void sub_process(int fd_logfile, int client_fd, char *home_dir, struct sockaddr_
     get_hash_path(hashed_url, &path);
     strcpy(path.url, url);
 
-    struct hostent *hent = (struct hostent*)gethostbyname(get_host(client_input));
-    printf("ip: %s\n", inet_ntoa(*((struct in_addr*)hent->h_addr_list[0])));
+    request(client_input);
+
     // set response message header and remember string's last index
-    index += sprintf(response,
-                "HTTP/1.0 200 OK\r\n"
-                "Server:SOONOO_SERVER\r\n"
-                "Content-type:text/html;charset=utf-8\r\n"
-            );
+    // index += sprintf(response,
+    //             "HTTP/1.0 200 OK\r\n"
+    //             "Server:SOONOO_SERVER\r\n"
+    //             "Content-type:text/html;charset=utf-8\r\n"
+    //         );
 
-    // if hit, print log
-    if(is_hit(&path)) {
-        printf("HIT");
+    // // if hit, print log
+    // if(is_hit(&path)) {
+    //     printf("HIT");
 
-        // set content-length and response body
-        sprintf(index, 
-                "Content-length:%lu\r\n\r\n"
-                "<h1>HIT</h1>", strlen("<h1>HIT</h1>")
-                );
-        hit_count++;
+    //     // set content-length and response body
+    //     sprintf(index, 
+    //             "Content-length:%lu\r\n\r\n"
+    //             "<h1>HIT</h1>", strlen("<h1>HIT</h1>")
+    //             );
+    //     hit_count++;
 
-        log_user_input(fd_logfile, hit, &path, pid);
-    }
+    //     log_user_input(fd_logfile, hit, &path, pid);
+    // }
 
-    // if miss, print log and make file with hashed url
-    else { 
-        printf("MISS");
+    // // if miss, print log and make file with hashed url
+    // else { 
+    //     printf("MISS");
 
-        // set content-length and response body
-        sprintf(index, 
-                "Content-length:%lu\r\n\r\n"
-                "<h1>MISS</h1>", strlen("<h1>MISS</h1>")
-                );
-        miss_count++;
+    //     // set content-length and response body
+    //     sprintf(index, 
+    //             "Content-length:%lu\r\n\r\n"
+    //             "<h1>MISS</h1>", strlen("<h1>MISS</h1>")
+    //             );
+    //     miss_count++;
 
-        log_user_input(fd_logfile, miss, &path, pid);
+    //     log_user_input(fd_logfile, miss, &path, pid);
 
-        chdir(CACHE_DIR_NAME);
-        // make directory if not exists
-        create_dir(path.dir_name);
+    //     chdir(CACHE_DIR_NAME);
+    //     // make directory if not exists
+    //     create_dir(path.dir_name);
 
-        // make file if not exists
-        open(path.full_path, O_CREAT, MODE_644);
-        chdir("..");
-    }
+    //     // make file if not exists
+    //     open(path.full_path, O_CREAT, MODE_644);
+    //     chdir("..");
+    // }
     
-    // print requested url to terminal
-    printf(" %s\n", url);
+    // // print requested url to terminal
+    // printf(" %s\n", url);
 
-    // print log when terminating process
-    dprintf(fd_logfile, "%s %s : %d | run time: %d sec. #request hit: %d, miss: %d\n",
-        TERM_LOG, SERVER_PID_LOG, pid, (int)(time(NULL) - start_time), hit_count, miss_count);
+    // // print log when terminating process
+    // dprintf(fd_logfile, "%s %s : %d | run time: %d sec. #request hit: %d, miss: %d\n",
+    //     TERM_LOG, SERVER_PID_LOG, pid, (int)(time(NULL) - start_time), hit_count, miss_count);
 
-    write(client_fd, response, strlen(response));
-    close(client_fd);    
+    // write(client_fd, response, strlen(response));
+    // close(client_fd);    
+    // exit(0);
+}
+
+
+void request(char *request_message)
+{
+    printf("%s", request_message);
+    struct hostent *hent = (struct hostent*)gethostbyname(get_host(request_message));
+    printf("ip: %s\n", inet_ntoa(*((struct in_addr*)hent->h_addr_list[0])));
+
+    int socket_fd, len;
+    struct sockaddr_in server_addr = { 0 }, client_addr;
+    socklen_t len_sock = sizeof(client_addr);
+    char buf[100000000] = { 0, };
+
+    // create a socket
+    if((socket_fd = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
+        perror("socket() error: ");
+        return;
+    }
+
+    // configure server address
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = inet_addr(inet_ntoa(*((struct in_addr*)hent->h_addr_list[0])));
+    server_addr.sin_port = htons(HTTP_PORTNO);
+
+    // initiate a connection
+    if(connect(socket_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
+        perror("connect() error");
+        return;
+    }
+
+    if(write(socket_fd, request_message, strlen(request_message) + 1) < 0) {
+        perror("write() error");
+        return;
+    }
+
+    if((len = read(socket_fd, buf, sizeof(buf))) < 0) {
+        perror("read() error");
+        return;
+    }
+
+    // print server response
+    printf("%s\n", buf);
+
     exit(0);
 }
