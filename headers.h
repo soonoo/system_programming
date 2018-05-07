@@ -30,6 +30,7 @@
 #include <netinet/in.h>
 #include <errno.h>
 #include <arpa/inet.h>
+#include <netdb.h>
 
 #include "hashed_path.h"
 
@@ -98,5 +99,6 @@ void log_user_input(int fd, log_type type, hashed_path* path, pid_t pid);
 input_type check_user_input(char *buf);
 void create_dir(char *dir_name);
 char *get_url(char *buf);
+char *get_host(char *buf);
 
 #endif /* __HEADERS_H__ */

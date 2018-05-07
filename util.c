@@ -250,6 +250,22 @@ input_type check_user_input(char *buf)
 */
 char *get_url(char *buf)
 {
-    strtok(buf, " ");
-    return strtok(NULL, " ");
+    static char temp[MAX_URL_LENGTH];
+    char *start = strstr(buf, " ") + 1;
+    char *end = strstr(start, " ");
+
+    strncpy(temp, start, end-start);
+    temp[end - start] = '\0';
+    return temp;
+}
+
+char *get_host(char *buf)
+{
+    static char temp[MAX_URL_LENGTH];
+    char *start = strstr(buf, "Host: ") + 6;
+    char *end = strstr(start, "\r\n");
+
+    strncpy(temp, start, end - start);
+    temp[end - start] = '\0';
+    return temp;
 }

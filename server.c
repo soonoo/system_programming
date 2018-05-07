@@ -168,17 +168,17 @@ void sub_process(int fd_logfile, int client_fd, char *home_dir, struct sockaddr_
     char hashed_url[HASH_PATH_LENGTH + 1];
 
     read(client_fd, client_input, INPUT_SIZE);
-
     // get URL from first line of request message
     url = get_url(client_input);
 
     // hash url
     sha1_hash(url, hashed_url);
-
     // get directory name and file name from checksum
     get_hash_path(hashed_url, &path);
     strcpy(path.url, url);
 
+    struct hostent *hent = (struct hostent*)gethostbyname(get_host(client_input));
+    printf("ip: %s\n", inet_ntoa(*((struct in_addr*)hent->h_addr_list[0])));
     // set response message header and remember string's last index
     index += sprintf(response,
                 "HTTP/1.0 200 OK\r\n"
