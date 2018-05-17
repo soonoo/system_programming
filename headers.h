@@ -31,6 +31,7 @@
 #include <errno.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <signal.h>
 
 #include "hashed_path.h"
 
@@ -101,6 +102,7 @@ input_type check_user_input(char *buf);
 void create_dir(char *dir_name);
 char *get_url(char *buf);
 char *get_host(char *buf);
-void request(char *request_message);
+void handle_alarm(int sig);
+void request(char *request_message, int client_fd, int cache_fd);
 
 #endif /* __HEADERS_H__ */

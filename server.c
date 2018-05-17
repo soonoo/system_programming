@@ -49,7 +49,7 @@ int main(void)
     printf("listening on port %d\n", PORTNO);
 
     // handle SIGCHILD signal
-    signal(SIGCHLD, (void *)sigchld_handler);
+    signal(SIGCHLD, sigchld_handler);
 
     while(1) {
         // accept a connection on socket
@@ -156,13 +156,15 @@ int init(char* home_dir)
 void sub_process(int fd_logfile, int client_fd, char *home_dir, struct sockaddr_in *client_addr)
 {
     int hit_count = 0, miss_count = 0;
+    int cache_fd, len;
     char client_input[INPUT_SIZE] = { 0, };
     time_t start_time;
     time(&start_time);
     pid_t pid = getpid();
-    char response[2000] = { 0, };
+    char response[8192] = { 0, };
     char *index = response;
     char *url;
+    char buf[4096] = { 0, };
 
     hashed_path path = { 0 };
     char hashed_url[HASH_PATH_LENGTH + 1];
@@ -177,74 +179,62 @@ void sub_process(int fd_logfile, int client_fd, char *home_dir, struct sockaddr_
     get_hash_path(hashed_url, &path);
     strcpy(path.url, url);
 
-    request(client_input);
+    printf("%s ", path.url);
+    // if hit, print log
+    if(is_hit(&path)) {
+        printf("HIT\n");
+        hit_count++;
+        log_user_input(fd_logfile, hit, &path, pid);
+        chdir(CACHE_DIR_NAME);
 
-    // set response message header and remember string's last index
-    // index += sprintf(response,
-    //             "HTTP/1.0 200 OK\r\n"
-    //             "Server:SOONOO_SERVER\r\n"
-    //             "Content-type:text/html;charset=utf-8\r\n"
-    //         );
+        cache_fd = open(path.full_path, O_RDONLY);
 
-    // // if hit, print log
-    // if(is_hit(&path)) {
-    //     printf("HIT");
+        while((len = read(cache_fd, buf, sizeof(buf))) > 0) {
+            write(client_fd, buf, len);
+            memset(buf, '\0', sizeof(char) * sizeof(buf));
+        }
+    }
 
-    //     // set content-length and response body
-    //     sprintf(index, 
-    //             "Content-length:%lu\r\n\r\n"
-    //             "<h1>HIT</h1>", strlen("<h1>HIT</h1>")
-    //             );
-    //     hit_count++;
+    // if miss, print log and make file with hashed url
+    else {
+        printf("MISS");
+        miss_count++;
+        log_user_input(fd_logfile, miss, &path, pid);
 
-    //     log_user_input(fd_logfile, hit, &path, pid);
-    // }
+        chdir(CACHE_DIR_NAME);
+        // make directory if not exists
+        create_dir(path.dir_name);
 
-    // // if miss, print log and make file with hashed url
-    // else { 
-    //     printf("MISS");
+        // make file if not exists
+        printf(" %s", path.full_path);
+        cache_fd = open(path.full_path, O_CREAT | O_WRONLY, MODE_644);
 
-    //     // set content-length and response body
-    //     sprintf(index, 
-    //             "Content-length:%lu\r\n\r\n"
-    //             "<h1>MISS</h1>", strlen("<h1>MISS</h1>")
-    //             );
-    //     miss_count++;
+        request(client_input, client_fd, cache_fd);
+        printf(" %d\n", cache_fd);
+        chdir("..");
+    }
 
-    //     log_user_input(fd_logfile, miss, &path, pid);
+    // print log when terminating process
+    dprintf(fd_logfile, "%s %s : %d | run time: %d sec. #request hit: %d, miss: %d\n",
+        TERM_LOG, SERVER_PID_LOG, pid, (int)(time(NULL) - start_time), hit_count, miss_count);
 
-    //     chdir(CACHE_DIR_NAME);
-    //     // make directory if not exists
-    //     create_dir(path.dir_name);
-
-    //     // make file if not exists
-    //     open(path.full_path, O_CREAT, MODE_644);
-    //     chdir("..");
-    // }
-    
-    // // print requested url to terminal
-    // printf(" %s\n", url);
-
-    // // print log when terminating process
-    // dprintf(fd_logfile, "%s %s : %d | run time: %d sec. #request hit: %d, miss: %d\n",
-    //     TERM_LOG, SERVER_PID_LOG, pid, (int)(time(NULL) - start_time), hit_count, miss_count);
-
-    // write(client_fd, response, strlen(response));
-    // close(client_fd);    
-    // exit(0);
+    exit(0);
 }
 
 
-void request(char *request_message)
+void handle_alarm(int sig)
 {
-    printf("%s", request_message);
-    struct hostent *hent = (struct hostent*)gethostbyname(get_host(request_message));
-    printf("ip: %s\n", inet_ntoa(*((struct in_addr*)hent->h_addr_list[0])));
+    printf("응답 없음\n");
+    exit(0);
+}
 
+void request(char *request_message, int client_fd, int cache_fd)
+{
+    struct hostent *hent = (struct hostent*)gethostbyname(get_host(request_message));
     int socket_fd, len;
     struct sockaddr_in server_addr = { 0 }, client_addr;
     socklen_t len_sock = sizeof(client_addr);
-    char buf[100000000] = { 0, };
+    char buf[8192] = { 0, };
 
     // create a socket
     if((socket_fd = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
@@ -267,14 +257,14 @@ void request(char *request_message)
         perror("write() error");
         return;
     }
+    signal(SIGALRM, handle_alarm);
 
-    if((len = read(socket_fd, buf, sizeof(buf))) < 0) {
-        perror("read() error");
-        return;
+    alarm(10);
+    while((len = read(socket_fd, buf, sizeof(buf))) > 0) {
+        write(client_fd, buf, len);
+        write(cache_fd, buf, len);
+        memset(buf, '\0', sizeof(char) * sizeof(buf));
     }
-
-    // print server response
-    printf("%s\n", buf);
-
-    exit(0);
+    close(client_fd);    
+    close(socket_fd);
 }
