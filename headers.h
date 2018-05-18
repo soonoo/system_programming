@@ -6,7 +6,7 @@
 *   Author          Hong Soonwoo
 *   Student ID      2014722023
 *
-*   Title           2018-1 System programming #2-2
+*   Title           2018-1 System programming #2-3
 *   Description     Includes standard libraries and custom functions/macros declaration
 *
 */
@@ -44,7 +44,7 @@
 #define HASH_LENGTH             40
 #define MAX_PATH_LENGTH         4096
 #define EQUAL                   0
-#define INPUT_SIZE              2048
+#define INPUT_SIZE              4096
 
 // permissions
 #define MODE_777                0777
@@ -67,15 +67,6 @@
 #define TERM_SERVER_LOG         "**SERVER**"
 #define SERVER_PID_LOG          "ServerPID"
 
-// terminal text color
-#define TERMINAL_COLOR_RED      "\x1b[31m"
-#define TERMINAL_COLOR_GREEN    "\x1b[32m"
-#define TERMINAL_COLOR_YELLOW   "\x1b[33m"
-#define TERMINAL_COLOR_BLUE     "\x1b[34m"
-#define TERMINAL_COLOR_MAGENTA  "\x1b[35m"
-#define TERMINAL_COLOR_CYAN     "\x1b[36m"
-#define TERMINAL_COLOR_RESET    "\x1b[0m"
-
 // enum for user input type
 typedef enum { bye, too_short, ok } input_type;
 
@@ -97,12 +88,13 @@ void remove_newline(char *string, size_t size);
 char *get_input(char *buf, int size);
 hashed_path *get_hash_path(char *hashed_url, hashed_path *path);
 bool is_hit(hashed_path *path);
-void log_user_input(int fd, log_type type, hashed_path* path, pid_t pid);
+void log_user_input(int fd, log_type type, hashed_path* path);
 input_type check_user_input(char *buf);
 void create_dir(char *dir_name);
 char *get_url(char *buf);
 char *get_host(char *buf);
-void handle_alarm(int sig);
-void request(char *request_message, int client_fd, int cache_fd);
+void sigalrm_handler(int sig);
+static void sigint_handler();
+void request(char *request_message, int cache_fd);
 
 #endif /* __HEADERS_H__ */

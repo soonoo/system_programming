@@ -181,21 +181,21 @@ bool is_hit(hashed_path *path)
 *   Description     print log message to file descriptor using dprintf() function
 *
 */
-void log_user_input(int fd, log_type type, hashed_path* path, pid_t pid)
+void log_user_input(int fd, log_type type, hashed_path* path)
 {
     time_t current_time = time(NULL);
     struct tm *local_time = localtime(&current_time);
     switch(type) {
         case hit:
-            dprintf(fd, "%s %s : %d | %s/%s-[%d/%02d/%02d, %02d:%02d:%02d]\n",
-                HIT_LOG, SERVER_PID_LOG, pid, path->dir_name, path->file_name,
+            dprintf(fd, "%s %s/%s-[%d/%02d/%02d, %02d:%02d:%02d]\n",
+                HIT_LOG, path->dir_name, path->file_name,
                 1900 + local_time->tm_year, local_time->tm_mon + 1, local_time->tm_mday,
                 local_time->tm_hour, local_time->tm_min, local_time->tm_sec);
             dprintf(fd, "%s %s\n", HIT_LOG, path->url);
             return;
         case miss:
-            dprintf(fd, "%s %s : %d | %s-[%d/%02d/%02d, %02d:%02d:%02d]\n",
-                MISS_LOG, SERVER_PID_LOG, pid, path->url,
+            dprintf(fd, "%s %s-[%d/%02d/%02d, %02d:%02d:%02d]\n",
+                MISS_LOG, path->url,
                 1900 + local_time->tm_year, local_time->tm_mon + 1, local_time->tm_mday,
                 local_time->tm_hour, local_time->tm_min, local_time->tm_sec);
             return;

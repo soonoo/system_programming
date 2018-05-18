@@ -6,7 +6,7 @@
 *   Author          Hong Soonwoo
 *   Student ID      2014722023
 *   
-*   Title           #2-2 Server program
+*   Title           #2-3 Server program
 *   Description     Wait for connection from client.
 *                   Call fork() when connection is established.
 *                   Connection is handled in sub_process()
@@ -15,14 +15,19 @@
 
 #include "headers.h"
 
+int fd_logfile = -1;
+int sub_process_num = 0;
+time_t current_time;
+
 int main(void)
 {
     char home_dir[MAX_PATH_LENGTH];
 
     // get home directory and file descriptor of log file
-    int fd_logfile = init(home_dir);
+    fd_logfile = init(home_dir);
     pid_t pid;
 
+    current_time = time(NULL);
     struct sockaddr_in server_addr = { 0 }, client_addr = { 0 };
     int socket_fd, client_fd;
     int len;
@@ -48,8 +53,9 @@ int main(void)
     listen(socket_fd, 10);
     printf("listening on port %d\n", PORTNO);
 
-    // handle SIGCHILD signal
+    // handle SIGCHILD/SIGINT signal
     signal(SIGCHLD, sigchld_handler);
+    signal(SIGINT, sigint_handler);
 
     while(1) {
         // accept a connection on socket
@@ -61,6 +67,7 @@ int main(void)
             return -1;
         }
 
+        sub_process_num++;
         pid = fork();
         
         // fork() error
@@ -99,6 +106,21 @@ static void sigchld_handler()
     while((pid = waitpid(-1, &status, WNOHANG)) > 0);
 }
 
+/*
+*
+*   sigint_handler
+*                       
+*   Description         write log when CTRL + C entered
+*
+*/
+static void sigint_handler()
+{
+    if(fd_logfile != -1) {
+        dprintf(fd_logfile, "%s %s run time: %d sec. #sub process: %d\n",
+            TERM_SERVER_LOG, TERM_LOG, (int)(time(NULL) - current_time), sub_process_num);
+    }
+    exit(0);
+}
 
 /*
 *
@@ -155,16 +177,11 @@ int init(char* home_dir)
 */
 void sub_process(int fd_logfile, int client_fd, char *home_dir, struct sockaddr_in *client_addr)
 {
-    int hit_count = 0, miss_count = 0;
     int cache_fd, len;
     char client_input[INPUT_SIZE] = { 0, };
-    time_t start_time;
-    time(&start_time);
-    pid_t pid = getpid();
-    char response[8192] = { 0, };
-    char *index = response;
+    time(NULL);
     char *url;
-    char buf[4096] = { 0, };
+    char buf[2048] = { 0, };
 
     hashed_path path = { 0 };
     char hashed_url[HASH_PATH_LENGTH + 1];
@@ -179,62 +196,69 @@ void sub_process(int fd_logfile, int client_fd, char *home_dir, struct sockaddr_
     get_hash_path(hashed_url, &path);
     strcpy(path.url, url);
 
-    printf("%s ", path.url);
     // if hit, print log
     if(is_hit(&path)) {
-        printf("HIT\n");
-        hit_count++;
-        log_user_input(fd_logfile, hit, &path, pid);
+        log_user_input(fd_logfile, hit, &path);
         chdir(CACHE_DIR_NAME);
-
         cache_fd = open(path.full_path, O_RDONLY);
-
-        while((len = read(cache_fd, buf, sizeof(buf))) > 0) {
-            write(client_fd, buf, len);
-            memset(buf, '\0', sizeof(char) * sizeof(buf));
-        }
     }
 
     // if miss, print log and make file with hashed url
     else {
-        printf("MISS");
-        miss_count++;
-        log_user_input(fd_logfile, miss, &path, pid);
+        log_user_input(fd_logfile, miss, &path);
 
         chdir(CACHE_DIR_NAME);
         // make directory if not exists
         create_dir(path.dir_name);
 
         // make file if not exists
-        printf(" %s", path.full_path);
-        cache_fd = open(path.full_path, O_CREAT | O_WRONLY, MODE_644);
+        cache_fd = open(path.full_path, O_CREAT | O_RDWR, MODE_644);
 
-        request(client_input, client_fd, cache_fd);
-        printf(" %d\n", cache_fd);
+        // request to origin server
+        request(client_input, cache_fd);
         chdir("..");
     }
 
-    // print log when terminating process
-    dprintf(fd_logfile, "%s %s : %d | run time: %d sec. #request hit: %d, miss: %d\n",
-        TERM_LOG, SERVER_PID_LOG, pid, (int)(time(NULL) - start_time), hit_count, miss_count);
+    // write cache file to browser
+    while((len = read(cache_fd, buf, sizeof(buf))) > 0) {
+        write(client_fd, buf, len);
+        memset(buf, '\0', sizeof(char) * sizeof(buf));
+    }
 
+    close(client_fd);    
     exit(0);
 }
 
-
-void handle_alarm(int sig)
+/*
+*
+*   sigalrm_handler
+*   Input               int                signal
+*                       
+*   Description         triggered when SIGALRM occured
+*
+*/
+void sigalrm_handler(int sig)
 {
+    
     printf("응답 없음\n");
     exit(0);
 }
 
-void request(char *request_message, int client_fd, int cache_fd)
+/*
+*
+*   request
+*   Input               char *      request message from browser
+*                       int         file descriptor of cache file
+*                       
+*   Description         send http request to origin server and write cache file
+*
+*/
+void request(char *request_message, int cache_fd)
 {
     struct hostent *hent = (struct hostent*)gethostbyname(get_host(request_message));
     int socket_fd, len;
     struct sockaddr_in server_addr = { 0 }, client_addr;
-    socklen_t len_sock = sizeof(client_addr);
-    char buf[8192] = { 0, };
+    char buf[2048] = { 0, };
 
     // create a socket
     if((socket_fd = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
@@ -245,6 +269,10 @@ void request(char *request_message, int client_fd, int cache_fd)
     // configure server address
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = inet_addr(inet_ntoa(*((struct in_addr*)hent->h_addr_list[0])));
+    if(server_addr.sin_addr.s_addr == INADDR_NONE) {
+        perror("inet_addr() error");
+        return;
+    }
     server_addr.sin_port = htons(HTTP_PORTNO);
 
     // initiate a connection
@@ -253,18 +281,20 @@ void request(char *request_message, int client_fd, int cache_fd)
         return;
     }
 
+    // write browser's message to origin server
     if(write(socket_fd, request_message, strlen(request_message) + 1) < 0) {
         perror("write() error");
         return;
     }
-    signal(SIGALRM, handle_alarm);
 
+    // register SIGALRM handler
+    signal(SIGALRM, sigalrm_handler);
     alarm(10);
+
+    // read from origin server and write cache file
     while((len = read(socket_fd, buf, sizeof(buf))) > 0) {
-        write(client_fd, buf, len);
         write(cache_fd, buf, len);
         memset(buf, '\0', sizeof(char) * sizeof(buf));
     }
-    close(client_fd);    
     close(socket_fd);
 }
