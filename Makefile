@@ -4,7 +4,7 @@ SERVER = proxy_cache
 FLAGS = -Wall -o
 
 $(SERVER): $(SERVER_OBJS)
-	$(CC) $(FLAGS) $@ $^ -lcrypto
+	$(CC) $(FLAGS) $@ $^ -lcrypto -pthread
 	make clean
 
 clean:

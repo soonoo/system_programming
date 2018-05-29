@@ -181,10 +181,26 @@ bool is_hit(hashed_path *path)
 *   Description     print log message to file descriptor using dprintf() function
 *
 */
-void log_user_input(int fd, log_type type, hashed_path* path)
+void log_user_input(int fd, log_type type, hashed_path* path, sem_t *sem_id)
 {
     time_t current_time = time(NULL);
+    int pid = getpid();
     struct tm *local_time = localtime(&current_time);
+
+    // check semaphore
+    // 1. wait if semaphore is less than 1
+    // 2. decrease semaphore if greater than 0 and continue routine
+    if(sem_trywait(sem_id) == -1) {
+        printf("PID #%d is waiting for the semaphore.\n", pid);
+        sem_wait(sem_id);
+    }
+
+    printf("PID #%d is in the critical zone.\n", pid);
+
+    // test code for simultaneous access
+    sleep(5);
+
+    // write log
     switch(type) {
         case hit:
             dprintf(fd, "%s %s/%s-[%d/%02d/%02d, %02d:%02d:%02d]\n",
@@ -192,14 +208,18 @@ void log_user_input(int fd, log_type type, hashed_path* path)
                 1900 + local_time->tm_year, local_time->tm_mon + 1, local_time->tm_mday,
                 local_time->tm_hour, local_time->tm_min, local_time->tm_sec);
             dprintf(fd, "%s %s\n", HIT_LOG, path->url);
-            return;
+            break;
         case miss:
             dprintf(fd, "%s %s-[%d/%02d/%02d, %02d:%02d:%02d]\n",
                 MISS_LOG, path->url,
                 1900 + local_time->tm_year, local_time->tm_mon + 1, local_time->tm_mday,
                 local_time->tm_hour, local_time->tm_min, local_time->tm_sec);
-            return;
+            break;
     }
+
+    // increase semaphore
+    sem_post(sem_id);
+    printf("PID #%d exited the critical zone.\n", pid);
 }
 
 /*

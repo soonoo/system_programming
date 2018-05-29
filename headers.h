@@ -31,7 +31,9 @@
 #include <errno.h>
 #include <arpa/inet.h>
 #include <netdb.h>
-#include <signal.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <semaphore.h>
 
 #include "hashed_path.h"
 
@@ -59,6 +61,7 @@
 #define CACHE_DIR_NAME          "cache"
 #define LOGFILE_DIR_NAME        "logfile"
 #define LOGFILE_NAME            "logfile.txt"
+#define LOGFILE_SEMAPHORE       "logfile_semaphore"
 
 // logfile format
 #define HIT_LOG                 "[Hit]"
@@ -71,7 +74,7 @@
 typedef enum { bye, too_short, ok } input_type;
 
 // enum for hit/miss
-typedef enum { hit, miss } log_type;
+typedef enum { miss, hit } log_type;
 
 // enum for bool type variables
 typedef enum { false, true } bool;
@@ -88,7 +91,7 @@ void remove_newline(char *string, size_t size);
 char *get_input(char *buf, int size);
 hashed_path *get_hash_path(char *hashed_url, hashed_path *path);
 bool is_hit(hashed_path *path);
-void log_user_input(int fd, log_type type, hashed_path* path);
+void log_user_input(int fd, log_type type, hashed_path* path, sem_t *sem_id);
 input_type check_user_input(char *buf);
 void create_dir(char *dir_name);
 char *get_url(char *buf);

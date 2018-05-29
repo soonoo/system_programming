@@ -17,6 +17,7 @@
 
 int fd_logfile = -1;
 int sub_process_num = 0;
+sem_t *sem_id;
 time_t current_time;
 
 int main(void)
@@ -119,6 +120,7 @@ static void sigint_handler()
         dprintf(fd_logfile, "%s %s run time: %d sec. #sub process: %d\n",
             TERM_SERVER_LOG, TERM_LOG, (int)(time(NULL) - current_time), sub_process_num);
     }
+    sem_unlink(LOGFILE_SEMAPHORE);
     exit(0);
 }
 
@@ -157,6 +159,12 @@ int init(char* home_dir)
     // create "cache" directory and change working directory
     create_dir(CACHE_DIR_NAME);
 
+    // create semaphore
+    if((sem_id = sem_open(LOGFILE_SEMAPHORE, O_CREAT, 0777, 1)) == NULL) {
+        perror("sem_open() error");
+        exit(0);
+    }
+
     return fd;
 }
 
@@ -185,6 +193,7 @@ void sub_process(int fd_logfile, int client_fd, char *home_dir, struct sockaddr_
 
     hashed_path path = { 0 };
     char hashed_url[HASH_PATH_LENGTH + 1];
+    log_type type;
 
     read(client_fd, client_input, INPUT_SIZE);
     // get URL from first line of request message
@@ -196,17 +205,14 @@ void sub_process(int fd_logfile, int client_fd, char *home_dir, struct sockaddr_
     get_hash_path(hashed_url, &path);
     strcpy(path.url, url);
 
-    // if hit, print log
-    if(is_hit(&path)) {
-        log_user_input(fd_logfile, hit, &path);
+    // if hit go to skip HTTP request to origin server
+    if(type = is_hit(&path)) {
         chdir(CACHE_DIR_NAME);
         cache_fd = open(path.full_path, O_RDONLY);
     }
 
-    // if miss, print log and make file with hashed url
+    // if miss, make a request to origin server
     else {
-        log_user_input(fd_logfile, miss, &path);
-
         chdir(CACHE_DIR_NAME);
         // make directory if not exists
         create_dir(path.dir_name);
@@ -225,7 +231,10 @@ void sub_process(int fd_logfile, int client_fd, char *home_dir, struct sockaddr_
         memset(buf, '\0', sizeof(char) * sizeof(buf));
     }
 
-    close(client_fd);    
+    close(client_fd);
+
+    // only one process can write a log at a time
+    log_user_input(fd_logfile, type, &path, sem_id);
     exit(0);
 }
 
@@ -239,7 +248,6 @@ void sub_process(int fd_logfile, int client_fd, char *home_dir, struct sockaddr_
 */
 void sigalrm_handler(int sig)
 {
-    
     printf("응답 없음\n");
     exit(0);
 }
