@@ -186,6 +186,9 @@ void log_user_input(int fd, log_type type, hashed_path* path, sem_t *sem_id)
     time_t current_time = time(NULL);
     int pid = getpid();
     struct tm *local_time = localtime(&current_time);
+    char log[512] = { 0, };
+    pthread_t tid;
+    void *tret;
 
     // check semaphore
     // 1. wait if semaphore is less than 1
@@ -198,28 +201,50 @@ void log_user_input(int fd, log_type type, hashed_path* path, sem_t *sem_id)
     printf("PID #%d is in the critical zone.\n", pid);
 
     // test code for simultaneous access
-    sleep(5);
+    sleep(1);
 
     // write log
     switch(type) {
         case hit:
-            dprintf(fd, "%s %s/%s-[%d/%02d/%02d, %02d:%02d:%02d]\n",
+            sprintf(log, "%s %s/%s-[%d/%02d/%02d, %02d:%02d:%02d]\n%s %s\n",
                 HIT_LOG, path->dir_name, path->file_name,
                 1900 + local_time->tm_year, local_time->tm_mon + 1, local_time->tm_mday,
-                local_time->tm_hour, local_time->tm_min, local_time->tm_sec);
-            dprintf(fd, "%s %s\n", HIT_LOG, path->url);
+                local_time->tm_hour, local_time->tm_min, local_time->tm_sec, HIT_LOG, path->url);
             break;
         case miss:
-            dprintf(fd, "%s %s-[%d/%02d/%02d, %02d:%02d:%02d]\n",
+            sprintf(log, "%s %s-[%d/%02d/%02d, %02d:%02d:%02d]\n",
                 MISS_LOG, path->url,
                 1900 + local_time->tm_year, local_time->tm_mon + 1, local_time->tm_mday,
                 local_time->tm_hour, local_time->tm_min, local_time->tm_sec);
             break;
     }
 
+    // create new thread
+    pthread_create(&tid, NULL, thread_print, (void *)log);
+    printf("PID #%d created the TID #%u.\n", (int)getpid(), (unsigned int)tid);
+
+    // wait for the thread
+    pthread_join(tid, NULL);
+    printf("TID #%u exited.\n", (int)tid);
+    printf("PID #%d exited the critical zone.\n", (int)getpid());
+
     // increase semaphore
     sem_post(sem_id);
-    printf("PID #%d exited the critical zone.\n", pid);
+}
+
+/*
+*
+*   thread_print
+*   Input           void*   text to log
+*
+*   Output          void
+*
+*   Description     triggered by sub process's thread, prints log 
+*
+*/
+void * thread_print(void* log)
+{
+    dprintf(fd_logfile, "%s", (char *)log);
 }
 
 /*
@@ -289,3 +314,4 @@ char *get_host(char *buf)
     temp[end - start] = '\0';
     return temp;
 }
+

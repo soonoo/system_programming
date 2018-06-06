@@ -304,5 +304,6 @@ void request(char *request_message, int cache_fd)
         write(cache_fd, buf, len);
         memset(buf, '\0', sizeof(char) * sizeof(buf));
     }
+    alarm(0);
     close(socket_fd);
 }

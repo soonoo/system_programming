@@ -34,6 +34,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <semaphore.h>
+#include <pthread.h>
 
 #include "hashed_path.h"
 
@@ -79,6 +80,10 @@ typedef enum { miss, hit } log_type;
 // enum for bool type variables
 typedef enum { false, true } bool;
 
+// external variables for thread
+extern int fd_logfile;
+extern sem_t* sem_id;
+
 // part of main function
 int init(char* home_dir);
 void sub_process(int fd_logfile, int client_fd, char *home_dir, struct sockaddr_in *client_addr);
@@ -99,5 +104,6 @@ char *get_host(char *buf);
 void sigalrm_handler(int sig);
 static void sigint_handler();
 void request(char *request_message, int cache_fd);
+void *thread_print();
 
 #endif /* __HEADERS_H__ */
